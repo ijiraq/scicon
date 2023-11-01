@@ -1,14 +1,17 @@
-# Official CANFAR Science Platform Documentation
+# ![CANFAR](https://www.canfar.net/css/images/logo.png) 
+
+# CANFAR Science Platform User Documentation
 
 ## Introduction and Access
 
-Access to the CANFAR Science Platform is through authorized access to the [CANFAR Portal](https://www.canfar.net). A Canadian Astronomy Data Centre (CADC) Account is required.
+The CANFAR Science Portal provides an execution environment for user-supplied software containers. Access to the Science Portal is controlled via the [CADC Group Management System](https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/groups/).  New users should first request a [CADC Account](https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/auth/request.html) and then contact a resource holder to have their account added to a group that has resource access:
 
-- To request a CADC Account:  https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/auth/request.html
-- Authorization to access the science platform:
+- if you are part of a collaboration already using CANFAR, ask the administrator of the collaboration you belong to add you as a member of the group using the [Group Interface](https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/groups/)
 
-    * if you are part of a collaboration already using CANFAR, ask the admininistrator of the collaboration you belong to add you as a member of the group using the [Group Interface](https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/groups/)
-    * in any other case, send an email to [support@canfar.net](mailto:support@canfar.net) specifying you are requesting access to the CANFAR Science Platform and a short line of justification.
+### New Resource Allocations
+If you have a project and would like to be allocated CANFAR Science Platform resources, please send an email to [support@canfar.net](mailto:support@canfar.net) specifying you are requesting resources on the CANFAR Science Platform (specifying compute and storage needs) with a short (a few lines) of justification for the allocation.
+
+## Software containers
 
 The CANFAR Science Platform runs software packaged in [containers](https://www.docker.com/resources/what-container/). The platform allows users to run both pre-built, shared containers or private, custom containers. Users can publish container images to the [CANFAR Container Images Registry](https://images.canfar.net).  We have specific documentation on how to [build and publish](containers.md) capable to run on the CANFAR Science Platform.
 
@@ -83,4 +86,3 @@ Contributions to the platform (including updates or corrections to the documenta
 
 General inquiries can be made to [support@canfar.net](mailto:support@canfar.net), and take a look at our [FAQ](faq.md).
 
-![CANFAR](https://www.canfar.net/css/images/logo.png){ height="200" }
