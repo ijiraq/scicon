@@ -21,8 +21,8 @@ RUN apt-get install -y git-lfs
 RUN apt install -y graphviz
 
 # install ds9, no packages and not on lsst platform by default
-#RUN curl https://ds9.si.edu/download/centos7/ds9.centos7.8.5.tar.gz | tar -zx -f - -C /usr/bin/
-RUN curl https://ds9.si.edu/download/centos9x86/ds9.centos9x86.8.7b1.tar.gz | tar -zx -f - -C /usr/bin/
+# RUN curl https://ds9.si.edu/download/centos7/ds9.centos7.8.5.tar.gz | tar -zx -f - -C /usr/bin/
+# RUN curl https://ds9.si.edu/download/centos9x86/ds9.centos9x86.8.7b1.tar.gz | tar -zx -f - -C /usr/bin/
 RUN curl https://ds9.si.edu/download/centos9x86/xpa.centos9x86.2.1.20.tar.gz | tar -zx -f - -C /usr/bin/
 
 
