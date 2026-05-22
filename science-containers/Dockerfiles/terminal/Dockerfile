@@ -16,6 +16,7 @@ ENV SHELL=/bin/bash \
 # BUCKET 1: System Foundation (Pure CLI-only tools)
 RUN apt update \
     && apt install -y --no-install-recommends \
+    acl \
     bash \
     bash-completion \
     ca-certificates \
