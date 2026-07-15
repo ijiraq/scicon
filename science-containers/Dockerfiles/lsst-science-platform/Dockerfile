@@ -13,16 +13,19 @@ RUN cat /var/lib/dpkg/statoverride
 RUN rm /var/lib/dpkg/statoverride
 RUN rm /var/lib/dpkg/lock
 RUN dpkg --configure -a
+RUN apt-get update
 RUN apt-get -f install
+RUN sed -i -e 's/http:\/\//https:\/\//g' /etc/apt/sources.list.d/debian.sources
 # Add xterm so this can be run on Desktop App 
 RUN apt-get install -y libx11-dev
 RUN apt-get install -y xterm
 RUN apt-get install -y git-lfs
 RUN apt install -y graphviz
+RUN apt-get clean
 
 # install ds9, no packages and not on lsst platform by default
-#RUN curl https://ds9.si.edu/download/centos7/ds9.centos7.8.5.tar.gz | tar -zx -f - -C /usr/bin/
-RUN curl https://ds9.si.edu/download/centos9x86/ds9.centos9x86.8.7b1.tar.gz | tar -zx -f - -C /usr/bin/
+# RUN curl https://ds9.si.edu/download/centos7/ds9.centos7.8.5.tar.gz | tar -zx -f - -C /usr/bin/
+# RUN curl https://ds9.si.edu/download/centos9x86/ds9.centos9x86.8.7b1.tar.gz | tar -zx -f - -C /usr/bin/
 RUN curl https://ds9.si.edu/download/centos9x86/xpa.centos9x86.2.1.20.tar.gz | tar -zx -f - -C /usr/bin/
 
 
