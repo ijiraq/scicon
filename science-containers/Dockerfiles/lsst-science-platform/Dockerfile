@@ -51,7 +51,8 @@ ENTRYPOINT ["/skaha/startup.sh"]
 FROM deploy as dev
 RUN echo "Adding a user to run local developement"
 RUN mkdir -p /arc/home
-RUN groupadd -g 1001 jkavelaars
-RUN useradd -u 1001 -g 1001 -s /bin/bash -d /arc/home/jkavelaars -m jkavelaars
-WORKDIR /arc/home/jkavelaars
-USER jkavelaars
+RUN groupadd -g 1001 testuser
+RUN useradd -u 1001 -g 1001 -s /bin/bash -d /arc/home/testuser -m testuser
+WORKDIR /arc/home/testuser
+USER testuser
+# Add test stuff here if needed.
