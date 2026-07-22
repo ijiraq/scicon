@@ -44,9 +44,23 @@ COPY src/jupyter /usr/bin/jupyter
 # Some items to make this a better experience on CANFAR
 RUN /skaha/startup.sh pip install cadctap cadcdata vos canfar safir rsp-jupyter-extensions lsdb
 WORKDIR /tmp
-COPY src/install_lsst_modes.sh /tmp/install_lsst_modes.sh
-RUN ls
-RUN bash /tmp/install_lsst_modes.sh
+COPY src/install_cadc_lsst_package.sh /tmp/install_cadc_lsst_package.sh
+RUN chmod +x /tmp/install_cadc_lsst_package.sh
+
+# CADC-patched LSST packages from ijiraq/lsst_<package> forks.
+# Each package: feature branch rebased onto the EUPS pin from lsst_distrib.
+# Each *_VER build-arg is a cache key (probe with `make eups-ver PKG=...`).
+# Install in dependency order (resources before daf_butler). Declared "current"
+# so later layers see earlier installs. To add a package: new ARG + RUN below.
+ARG FEATURE_BRANCH=cadc_datastore
+
+ARG RESOURCES_VER
+RUN FEATURE_BRANCH="$FEATURE_BRANCH" && \
+    /tmp/install_cadc_lsst_package.sh resources Required "${RESOURCES_VER:-}"
+
+ARG DAF_BUTLER_VER
+RUN FEATURE_BRANCH="$FEATURE_BRANCH" && \
+    /tmp/install_cadc_lsst_package.sh daf_butler Optional "${DAF_BUTLER_VER:-}"
 
 # This is just for when using this as standalong container
 WORKDIR /

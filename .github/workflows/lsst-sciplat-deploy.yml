@@ -44,13 +44,35 @@ jobs:
       - name: Science Platform Release Version
         id: upstream
         run: |
-          version=latest_release          
+          version=latest_release
           echo "version=$version" >> $GITHUB_OUTPUT
-      
+
+      - name: EUPS package pins
+        id: pins
+        run: |
+          # Pins for ijiraq/lsst_<package> forks. Add another package by probing
+          # its setupRequired/setupOptional line and passing a matching build-arg.
+          # Base image runs as nobody with SHELL=nologin; loadLSST needs bash + HOME.
+          eval "$(docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash \
+            "lsstsqre/sciplat-lab:${{ steps.upstream.outputs.version }}" -c '
+              source /opt/lsst/software/stack/loadLSST.bash >/dev/null 2>&1
+              setup lsst_distrib >/dev/null 2>&1
+              TABLE="$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table"
+              pin() { awk -v kind="$1" -v pkg="$2" "index(\$0, \"setup\" kind \"(\" pkg) { gsub(/)/, \"\", \$NF); print \$NF; exit }" "$TABLE"; }
+              printf "resources_ver=%s\n" "$(pin Required resources)"
+              printf "daf_butler_ver=%s\n" "$(pin Optional daf_butler)"
+            ')"
+          echo "resources_ver=$resources_ver" >> "$GITHUB_OUTPUT"
+          echo "daf_butler_ver=$daf_butler_ver" >> "$GITHUB_OUTPUT"
+          echo "RESOURCES_VER=$resources_ver"
+          echo "DAF_BUTLER_VER=$daf_butler_ver"
+
       - name: Echo Version
         run: |
           echo "Building sciplat-lab Version: ${{ steps.upstream.outputs.version }}"
-    
+          echo "Resources pin: ${{ steps.pins.outputs.resources_ver }}"
+          echo "daf_butler pin: ${{ steps.pins.outputs.daf_butler_ver }}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.10.0
 
@@ -60,7 +82,7 @@ jobs:
           registry: images.canfar.net
           username: ${{ secrets.CANFAR_USERNAME }}
           password: ${{ secrets.CANFAR_IMAGES_TOKEN }}
-      
+
       - name: Build & Push lsst/sciplat-lab
         id: build
         uses: docker/build-push-action@v6.16.0
@@ -68,6 +90,10 @@ jobs:
           context: science-containers/Dockerfiles/lsst-science-platform
           file: science-containers/Dockerfiles/lsst-science-platform/Dockerfile
           push: true
+          build-args: |
+            VERSION=${{ steps.upstream.outputs.version }}
+            RESOURCES_VER=${{ steps.pins.outputs.resources_ver }}
+            DAF_BUTLER_VER=${{ steps.pins.outputs.daf_butler_ver }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ steps.upstream.outputs.version }}
           platforms: linux/amd64
