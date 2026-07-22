@@ -13,11 +13,11 @@ export DAF_BUTLER_SERVER_AUTHENTICATION=cadc
 
 # initialize the LSST path
 . /etc/profile
-# .  /opt/lsst/software/stack/loadLSST.bash
+.  /opt/lsst/software/stack/loadLSST.bash
 
 [ -f ~/.ssl/cadcproxy.pem ] || canfar auth login
 [ -f ~/.ssl/cadcproxy.pem ] && export CADC_TOKEN=$(curl -E ~/.ssl/cadcproxy.pem "https://ws-cadc.canfar.net/ac/authorize?response_type=token")
-export fireflyURLLab="$(python /skaha/launch_firefly_on_canfar.py)"
+export fireflyURLLab="$(python /skaha/launch_firefly_on_canfar.py | grep https)"
 export FIREFLY_URL="${fireflyURLLab}"
 
 # start a server that can start firefly for the user 

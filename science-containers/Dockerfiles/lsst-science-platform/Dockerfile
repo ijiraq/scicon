@@ -43,6 +43,10 @@ COPY src/jupyter /usr/bin/jupyter
 
 # Some items to make this a better experience on CANFAR
 RUN /skaha/startup.sh pip install cadctap cadcdata vos canfar safir rsp-jupyter-extensions lsdb
+WORKDIR /tmp
+COPY src/install_lsst_modes.sh /tmp/install_lsst_modes.sh
+RUN ls
+RUN bash /tmp/install_lsst_modes.sh
 
 # This is just for when using this as standalong container
 WORKDIR /
