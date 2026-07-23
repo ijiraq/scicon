@@ -4,6 +4,15 @@ NAME = images.canfar.net/lsst/$(DEVNAME)
 VERSION = latest_daily
 DATE := $(shell date '+%Y%m%d')
 
+LSST_BASE_REPO = lsstsqre/sciplat-lab
+
+# Resolve floating tags (latest_release / latest_daily) to the linux/amd64
+# manifest digest so EUPS probing and FROM use the same image. Otherwise
+# host `docker run` and Buildx/GHA cache can see different moving tags and
+# the expected-pin check fails.
+BASE_DIGEST ?= $(shell docker buildx imagetools inspect $(LSST_BASE_REPO):$(VERSION) --raw | python3 -c 'import sys,json;d=json.load(sys.stdin);ms=d.get("manifests")or[];print(next(m["digest"] for m in ms if m.get("platform")=={"architecture":"amd64","os":"linux"}))')
+BASE_IMAGE ?= $(LSST_BASE_REPO)@$(BASE_DIGEST)
+
 # CADC-patched packages: EUPS name and setupRequired/setupOptional kind.
 # Forks are always ijiraq/lsst_<name>. Install order is Dockerfile order only
 # (e.g. resources before daf_butler). To add a package: append here, add
@@ -20,7 +29,8 @@ pkg_ver_arg = $(shell echo $(1) | tr '[:lower:]' '[:upper:]')_VER
 # writable HOME for EUPS.
 eups-ver:
 	@test -n "$(PKG)" || (echo "usage: make eups-ver PKG=resources KIND=Required" >&2; exit 1)
-	@docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash lsstsqre/sciplat-lab:$(VERSION) -c '\
+	@echo "Probing $(PKG) from $(BASE_IMAGE)" >&2
+	@docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash $(BASE_IMAGE) -c '\
 		source /opt/lsst/software/stack/loadLSST.bash >/dev/null 2>&1 && \
 		setup lsst_distrib >/dev/null 2>&1 && \
 		TABLE=$$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table && \
@@ -36,7 +46,7 @@ RESOURCES_VER ?= $(shell $(MAKE) -s resources-ver)
 DAF_BUTLER_VER ?= $(shell $(MAKE) -s daf-butler-ver)
 
 BUILD_ARGS = \
-	--build-arg VERSION=$(VERSION) \
+	--build-arg BASE_IMAGE=$(BASE_IMAGE) \
 	$(foreach p,$(CADC_PACKAGES),--build-arg $(call pkg_ver_arg,$(p))=$($(call pkg_ver_arg,$(p))))
 
 # Optional Buildx cache. CI sets:
@@ -66,6 +76,7 @@ BUILDX_TAGS = \
 # Shared buildx invocation pieces (target/file/context differ per recipe).
 BUILDX_BASE = docker buildx build \
 	--platform linux/amd64 \
+	--pull \
 	$(BUILD_ARGS) \
 	$(CACHE_FLAGS) \
 	$(BUILDX_TAGS) \
@@ -74,6 +85,7 @@ BUILDX_BASE = docker buildx build \
 # Local image only (--load). SBOM/provenance attestations are not retained in
 # the default Docker image store, so they are omitted here on purpose.
 build: dependencies Dockerfile
+	@echo "BASE_IMAGE=$(BASE_IMAGE)"
 	$(BUILDX_BASE) \
 		--target deploy \
 		--load
@@ -81,6 +93,7 @@ build: dependencies Dockerfile
 # Build, attach SBOM + provenance, and push. Requires prior `docker login`.
 # Attestations only reach the registry when pushed via buildx (not docker push).
 deploy: dependencies Dockerfile
+	@echo "BASE_IMAGE=$(BASE_IMAGE)"
 	$(BUILDX_BASE) \
 		--target deploy \
 		--sbom=true \
@@ -89,6 +102,7 @@ deploy: dependencies Dockerfile
 		--push
 
 dev: dependencies Dockerfile
+	@echo "BASE_IMAGE=$(BASE_IMAGE)"
 	$(BUILDX_BASE) \
 		--target dev \
 		--load

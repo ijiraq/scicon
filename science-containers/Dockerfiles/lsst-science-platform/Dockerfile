@@ -1,7 +1,9 @@
 # This Dockerfile is used to build the LSST Science Platform container
 # This is currently an ALMA LINUX distro
-ARG VERSION=latest_daily
-FROM lsstsqre/sciplat-lab:${VERSION} AS deploy
+# BASE_IMAGE should be a digest-pinned ref (lsstsqre/sciplat-lab@sha256:...) so
+# the EUPS pins probed by Make match the image Buildx actually builds FROM.
+ARG BASE_IMAGE=lsstsqre/sciplat-lab:latest_daily
+FROM ${BASE_IMAGE} AS deploy
 
 # The RSP removes the passwd and group files 
 # but that makes adding software fail. Add back

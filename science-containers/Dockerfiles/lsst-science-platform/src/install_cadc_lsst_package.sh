@@ -36,8 +36,12 @@ PINNED="$(awk -v pkg="$PACKAGE" -v kind="$SETUP_KIND" \
     "$TABLE")"
 test -n "$PINNED"
 echo "EUPS pin for ${PACKAGE}: ${PINNED}"
-if [ -n "$EXPECTED_VER" ]; then
-    test "$EXPECTED_VER" = "$PINNED"
+if [ -n "$EXPECTED_VER" ] && [ "$EXPECTED_VER" != "$PINNED" ]; then
+    echo "error: EUPS pin mismatch for ${PACKAGE}:" >&2
+    echo "  expected (from Make probe): ${EXPECTED_VER}" >&2
+    echo "  found in build image:      ${PINNED}" >&2
+    echo "hint: base tag drifted between probe and FROM; use a digest-pinned BASE_IMAGE" >&2
+    exit 1
 fi
 
 UPSTREAM_COMMIT="$(echo "$PINNED" | sed -E 's/^g//; s/\+.*//')"
