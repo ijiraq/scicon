@@ -14,6 +14,9 @@
 # Note: do not enable `set -u` before loadLSST/setup — conda/eups activate
 # scripts reference unset vars (EUPS_PATH, DYLD_LIBRARY_PATH, etc.).
 set -e
+# BuildKit RUN often leaves HOME unset; EUPS setup expands ${HOME}/.cargo/ and
+# fails with "HOME is not defined" unless we set it first.
+export HOME="${HOME:-/root}"
 export SHELL="${SHELL:-/bin/bash}"
 
 PACKAGE="${1:?package name required (e.g. resources, daf_butler)}"
@@ -21,6 +24,8 @@ SETUP_KIND="${2:?Required or Optional (setupRequired/setupOptional in table)}"
 EXPECTED_VER="${3:-}"
 FEATURE_BRANCH="${FEATURE_BRANCH:-cadc_datastore}"
 FORK_REPO="lsst_${PACKAGE}"
+
+echo "Installing ${PACKAGE} from ijiraq/${FORK_REPO}@${FEATURE_BRANCH} (kind=${SETUP_KIND}, expected=${EXPECTED_VER:-any})"
 
 source /opt/lsst/software/stack/loadLSST.bash
 setup lsst_distrib
@@ -30,6 +35,7 @@ PINNED="$(awk -v pkg="$PACKAGE" -v kind="$SETUP_KIND" \
     'index($0, "setup" kind "(" pkg) { gsub(/)/, "", $NF); print $NF; exit }' \
     "$TABLE")"
 test -n "$PINNED"
+echo "EUPS pin for ${PACKAGE}: ${PINNED}"
 if [ -n "$EXPECTED_VER" ]; then
     test "$EXPECTED_VER" = "$PINNED"
 fi
@@ -37,6 +43,7 @@ fi
 UPSTREAM_COMMIT="$(echo "$PINNED" | sed -E 's/^g//; s/\+.*//')"
 SRC="/tmp/${PACKAGE}"
 
+echo "Cloning https://github.com/ijiraq/${FORK_REPO}.git (${FEATURE_BRANCH})"
 git clone \
     --branch "$FEATURE_BRANCH" \
     --single-branch \
@@ -49,6 +56,7 @@ git fetch --no-tags upstream main
 # feature branch onto that pin — do not require pin == upstream/main HEAD.
 PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}")"
 git merge-base --is-ancestor "$PIN_FULL" upstream/main
+echo "Rebasing ${FEATURE_BRANCH} onto upstream ${PIN_FULL}"
 git -c user.name="Container Build" \
     -c user.email="container-build@localhost" \
     rebase "$PIN_FULL"
@@ -57,3 +65,4 @@ setup -r .
 scons --no-tests
 scons --no-tests install declare current "version=${PINNED}"
 setup "$PACKAGE"
+echo "Installed ${PACKAGE} ${PINNED}"

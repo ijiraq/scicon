@@ -1,12 +1,15 @@
 # This Dockerfile is used to build the LSST Science Platform container
 # This is currently an ALMA LINUX distro
 ARG VERSION=latest_daily
-FROM lsstsqre/sciplat-lab:${VERSION} as deploy
+FROM lsstsqre/sciplat-lab:${VERSION} AS deploy
 
 # The RSP removes the passwd and group files 
 # but that makes adding software fail. Add back
 # a default set of system users so we can augment the container
 USER 0:0
+# BuildKit does not always set HOME for RUN; EUPS/loadLSST need a writable HOME.
+ENV HOME=/root \
+    SHELL=/bin/bash
 COPY src/passwd /etc/passwd
 COPY src/group /etc/group
 RUN cat /var/lib/dpkg/statoverride
@@ -66,7 +69,7 @@ RUN FEATURE_BRANCH="$FEATURE_BRANCH" && \
 WORKDIR /
 ENTRYPOINT ["/skaha/startup.sh"]
 
-FROM deploy as dev
+FROM deploy AS dev
 RUN echo "Adding a user to run local developement"
 RUN mkdir -p /arc/home
 RUN groupadd -g 1001 testuser
