@@ -77,7 +77,6 @@ build: dependencies Dockerfile
 	$(BUILDX_BASE) \
 		--target deploy \
 		--load \
-		.
 
 # Build, attach SBOM + provenance, and push. Requires prior `docker login`.
 # Attestations only reach the registry when pushed via buildx (not docker push).
@@ -88,13 +87,11 @@ deploy: dependencies Dockerfile
 		--provenance=mode=max \
 		$(METADATA_FLAGS) \
 		--push \
-		.
 
 dev: dependencies Dockerfile
 	$(BUILDX_BASE) \
 		--target dev \
 		--load \
-		.
 
 dependencies:
 
