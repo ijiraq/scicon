@@ -1,13 +1,22 @@
 name: Build & Push lsst/sciplat-lab
 
+# Maintainer-gated deploy: merge to main does not ship an image.
+# Primary: Actions → Run workflow (optional base-image VERSION).
+# Secondary: push a tag matching lsst-sciplat-lab-* for a git-auditable ship.
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Base lsstsqre/sciplat-lab tag (also used as floating image tag)
+        required: true
+        default: latest_release
+        type: choice
+        options:
+          - latest_release
+          - latest_daily
   push:
-    branches:
-      - deploy
-    paths:
-      - 'science-containers/Dockerfiles/lsst-science-platform/**'
-      - '.github/workflows/lsst-sciplat-deploy.yml'
+    tags:
+      - 'lsst-sciplat-lab-*'
 
 permissions:
   contents: read
@@ -15,11 +24,12 @@ permissions:
 env:
   REGISTRY: images.canfar.net
   IMAGE: lsst/sciplat-lab
+  # Dispatch input when present; tag-triggered runs default to latest_release.
+  VERSION: ${{ github.event.inputs.version || 'latest_release' }}
+  MAKEFILE_DIR: science-containers/Dockerfiles/lsst-science-platform
 
 jobs:
   build:
-    # Repository name-guard to prevent this workflow from running on forks
-    if: ${{ github.repository == 'ijiraq/scicon' }}
     name: Build and Push LSST Science Platform
     runs-on: ubuntu-latest
     permissions:
@@ -40,88 +50,50 @@ jobs:
           docker system prune -af && sudo rm -rf /tmp/*
           df -h
 
-
-      - name: Science Platform Release Version
-        id: upstream
-        run: |
-          version=latest_release
-          echo "version=$version" >> $GITHUB_OUTPUT
-
-      - name: EUPS package pins
-        id: pins
-        run: |
-          # Pins for ijiraq/lsst_<package> forks. Add another package by probing
-          # its setupRequired/setupOptional line and passing a matching build-arg.
-          # Base image runs as nobody with SHELL=nologin; loadLSST needs bash + HOME.
-          eval "$(docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash \
-            "lsstsqre/sciplat-lab:${{ steps.upstream.outputs.version }}" -c '
-              source /opt/lsst/software/stack/loadLSST.bash >/dev/null 2>&1
-              setup lsst_distrib >/dev/null 2>&1
-              TABLE="$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table"
-              pin() { awk -v kind="$1" -v pkg="$2" "index(\$0, \"setup\" kind \"(\" pkg) { gsub(/)/, \"\", \$NF); print \$NF; exit }" "$TABLE"; }
-              printf "resources_ver=%s\n" "$(pin Required resources)"
-              printf "daf_butler_ver=%s\n" "$(pin Optional daf_butler)"
-            ')"
-          echo "resources_ver=$resources_ver" >> "$GITHUB_OUTPUT"
-          echo "daf_butler_ver=$daf_butler_ver" >> "$GITHUB_OUTPUT"
-          echo "RESOURCES_VER=$resources_ver"
-          echo "DAF_BUTLER_VER=$daf_butler_ver"
-
-      - name: Echo Version
-        run: |
-          echo "Building sciplat-lab Version: ${{ steps.upstream.outputs.version }}"
-          echo "Resources pin: ${{ steps.pins.outputs.resources_ver }}"
-          echo "daf_butler pin: ${{ steps.pins.outputs.daf_butler_ver }}"
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.10.0
 
-      - name: Log in to Docker Hub
+      - name: Log in to CANFAR images registry
         uses: docker/login-action@v3.4.0
         with:
-          registry: images.canfar.net
+          registry: ${{ env.REGISTRY }}
           username: ${{ secrets.CANFAR_USERNAME }}
           password: ${{ secrets.CANFAR_IMAGES_TOKEN }}
 
-      - name: Build & Push lsst/sciplat-lab
-        id: build
-        uses: docker/build-push-action@v6.16.0
-        with:
-          context: science-containers/Dockerfiles/lsst-science-platform
-          file: science-containers/Dockerfiles/lsst-science-platform/Dockerfile
-          push: true
-          build-args: |
-            VERSION=${{ steps.upstream.outputs.version }}
-            RESOURCES_VER=${{ steps.pins.outputs.resources_ver }}
-            DAF_BUTLER_VER=${{ steps.pins.outputs.daf_butler_ver }}
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ steps.upstream.outputs.version }}
-          platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: mode=max
-          sbom: true
-          labels: |
-            org.opencontainers.image.title=${{ env.IMAGE }}
-            org.opencontainers.image.description='LSST Science Platform'
-            org.opencontainers.image.version=${{ steps.upstream.outputs.version }}
-            org.opencontainers.image.source=https://github.com/opencadc/science-containers
+      - name: Build & push lsst/sciplat-lab
+        id: deploy
+        working-directory: ${{ env.MAKEFILE_DIR }}
+        run: |
+          DATE="$(date '+%Y%m%d')"
+          META="$(mktemp)"
+          echo "Building/pushing ${REGISTRY}/${IMAGE}:{${VERSION},${DATE}}"
+          make deploy \
+            VERSION="${VERSION}" \
+            DATE="${DATE}" \
+            CACHE_FROM=type=gha \
+            CACHE_TO=type=gha,mode=max \
+            METADATA_FILE="${META}"
+          DIGEST="$(jq -r '."containerimage.digest"' "${META}")"
+          test -n "${DIGEST}" && test "${DIGEST}" != "null"
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "Pushed ${REGISTRY}/${IMAGE}@${DIGEST}"
 
       - name: Attest Image
         id: attest
         uses: actions/attest-build-provenance@v2.3.0
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE }}
-          subject-digest: ${{ steps.build.outputs.digest }}
-          # push-to-registry: true
+          subject-digest: ${{ steps.deploy.outputs.digest }}
           show-summary: true
+
       - name: Install Cosign
         id: install-cosign
         uses: sigstore/cosign-installer@v3.8.2
         with:
           cosign-release: 'v2.4.3'
+
       - name: Cosign Container Image
         id: cosign
         run: |
           cosign version
-          cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE }}@${{ steps.build.outputs.digest }} --upload
+          cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE }}@${{ steps.deploy.outputs.digest }} --upload
