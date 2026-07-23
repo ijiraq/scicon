@@ -39,24 +39,68 @@ BUILD_ARGS = \
 	--build-arg VERSION=$(VERSION) \
 	$(foreach p,$(CADC_PACKAGES),--build-arg $(call pkg_ver_arg,$(p))=$($(call pkg_ver_arg,$(p))))
 
-deploy: dependencies Dockerfile
-	docker build \
+# Optional Buildx cache. CI sets:
+#   CACHE_FROM=type=gha CACHE_TO=type=gha,mode=max
+# Leave unset locally (type=gha only works on GitHub Actions runners).
+CACHE_FROM ?=
+CACHE_TO ?=
+CACHE_FLAGS =
+ifneq ($(CACHE_FROM),)
+CACHE_FLAGS += --cache-from=$(CACHE_FROM)
+endif
+ifneq ($(CACHE_TO),)
+CACHE_FLAGS += --cache-to=$(CACHE_TO)
+endif
+
+# Optional buildx metadata (CI uses this to capture the pushed digest).
+METADATA_FILE ?=
+METADATA_FLAGS =
+ifneq ($(METADATA_FILE),)
+METADATA_FLAGS += --metadata-file=$(METADATA_FILE)
+endif
+
+BUILDX_TAGS = \
+	-t $(NAME):$(DATE) \
+	-t $(NAME):$(VERSION)
+
+# Shared buildx invocation pieces (target/file/context differ per recipe).
+BUILDX_BASE = docker buildx build \
+	--platform linux/amd64 \
+	$(BUILD_ARGS) \
+	$(CACHE_FLAGS) \
+	$(BUILDX_TAGS) \
+	-f Dockerfile .
+
+# Local image only (--load). SBOM/provenance attestations are not retained in
+# the default Docker image store, so they are omitted here on purpose.
+build: dependencies Dockerfile
+	$(BUILDX_BASE) \
 		--target deploy \
-		$(BUILD_ARGS) \
-		-t $(NAME):$(DATE) -f Dockerfile .
-	docker push $(NAME):$(DATE)
+		--load \
+		.
+
+# Build, attach SBOM + provenance, and push. Requires prior `docker login`.
+# Attestations only reach the registry when pushed via buildx (not docker push).
+deploy: dependencies Dockerfile
+	$(BUILDX_BASE) \
+		--target deploy \
+		--sbom=true \
+		--provenance=mode=max \
+		$(METADATA_FLAGS) \
+		--push \
+		.
 
 dev: dependencies Dockerfile
-	docker build \
+	$(BUILDX_BASE) \
 		--target dev \
-		$(BUILD_ARGS) \
-		-t $(NAME):$(DATE) -f Dockerfile .
+		--load \
+		.
 
 dependencies:
 
 init:
 	mkdir -p build
 
-.PHONY: clean eups-ver resources-ver daf-butler-ver
+.PHONY: build deploy dev clean eups-ver resources-ver daf-butler-ver
 clean:
 	\rm -rf build
