@@ -5,44 +5,38 @@
 #   fork:     https://github.com/ijiraq/lsst_<package>
 #   upstream: https://github.com/lsst/<package>
 #   branch:   $FEATURE_BRANCH (default: cadc_datastore), rebased onto the
-#             EUPS-pinned upstream commit from lsst_distrib
+#             per-package EUPS pin from lsst_distrib.table
+#             (setupRequired/setupOptional line for this package — not the
+#             lsst_distrib metapackage version itself).
 #
 # Usage:
 #   FEATURE_BRANCH=cadc_datastore \
-#     install_cadc_lsst_package.sh <package> <Required|Optional> [expected_version]
+#     install_cadc_lsst_package.sh <package> <Required|Optional>
 #
 # Note: do not enable `set -u` before loadLSST/setup — conda/eups activate
 # scripts reference unset vars (EUPS_PATH, DYLD_LIBRARY_PATH, etc.).
 set -e
-# BuildKit RUN often leaves HOME unset; EUPS setup expands ${HOME}/.cargo/ and
-# fails with "HOME is not defined" unless we set it first.
+# BuildKit RUN often leaves HOME unset; EUPS setup expands ${HOME}/.cargo/.
 export HOME="${HOME:-/root}"
 export SHELL="${SHELL:-/bin/bash}"
 
 PACKAGE="${1:?package name required (e.g. resources, daf_butler)}"
 SETUP_KIND="${2:?Required or Optional (setupRequired/setupOptional in table)}"
-EXPECTED_VER="${3:-}"
 FEATURE_BRANCH="${FEATURE_BRANCH:-cadc_datastore}"
 FORK_REPO="lsst_${PACKAGE}"
 
-echo "Installing ${PACKAGE} from ijiraq/${FORK_REPO}@${FEATURE_BRANCH} (kind=${SETUP_KIND}, expected=${EXPECTED_VER:-any})"
+echo "Installing ${PACKAGE} from ijiraq/${FORK_REPO}@${FEATURE_BRANCH} (kind=${SETUP_KIND})"
 
 source /opt/lsst/software/stack/loadLSST.bash
 setup lsst_distrib
 
+# Individual package pin from the metapackage table (e.g. setupRequired(resources …)).
 TABLE="$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table"
 PINNED="$(awk -v pkg="$PACKAGE" -v kind="$SETUP_KIND" \
     'index($0, "setup" kind "(" pkg) { gsub(/)/, "", $NF); print $NF; exit }' \
     "$TABLE")"
 test -n "$PINNED"
 echo "EUPS pin for ${PACKAGE}: ${PINNED}"
-if [ -n "$EXPECTED_VER" ] && [ "$EXPECTED_VER" != "$PINNED" ]; then
-    echo "error: EUPS pin mismatch for ${PACKAGE}:" >&2
-    echo "  expected (from Make probe): ${EXPECTED_VER}" >&2
-    echo "  found in build image:      ${PINNED}" >&2
-    echo "hint: base tag drifted between probe and FROM; use a digest-pinned BASE_IMAGE" >&2
-    exit 1
-fi
 
 UPSTREAM_COMMIT="$(echo "$PINNED" | sed -E 's/^g//; s/\+.*//')"
 SRC="/tmp/${PACKAGE}"
