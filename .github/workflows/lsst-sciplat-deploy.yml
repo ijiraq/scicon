@@ -30,7 +30,7 @@ env:
 
 jobs:
   call-workflow:
-    uses: ijiraq/.github/workflows/lsst-sciplat-deploy.yml
+    uses: ijiraq/.github/workflows/lsst-sciplat-deploy.yml@main
     secrets:
       CADC_HARBOR_ROBOR_PUBLISHER_NAME: ${{ secrets.CANFAR_IMAGES_TOKEN }}
       CADC_HARBOR_ROBOT_PUBLISHER_SECRET: $${ secrets.CANFAR_USERNAME }}
