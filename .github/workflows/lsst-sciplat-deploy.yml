@@ -29,6 +29,11 @@ env:
   MAKEFILE_DIR: science-containers/Dockerfiles/lsst-science-platform
 
 jobs:
+  call-workflow:
+    uses: ijiraq/.github/workflows/lsst-sciplat-deploy.yml
+    secrets:
+      CADC_HARBOR_ROBOR_PUBLISHER_NAME: ${{ secrets.CANFAR_IMAGES_TOKEN }}
+      CADC_HARBOR_ROBOT_PUBLISHER_SECRET: $${ secrets.CANFAR_USERNAME }}
   build:
     name: Build and Push LSST Science Platform
     runs-on: ubuntu-latest
