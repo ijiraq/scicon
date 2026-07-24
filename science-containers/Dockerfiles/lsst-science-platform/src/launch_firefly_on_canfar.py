@@ -1,4 +1,15 @@
-from canfar.sessions import Session
+import os
+import sys
+try:
+    from canfar.sessions import Session
+except Exception as ex:
+    if ex.__class__.__name__ == "ConfigResetRequiredError":
+        _config_file = f"{os.environ['HOME']}/.canfar/config.yaml"
+        os.unlink(_config_file)
+        from canfar.sessions import Session
+    else:
+        raise ex
+
 import httpx
 import time
 
@@ -42,5 +53,6 @@ class FireFly:
         return url
 
 
+certificate = f"{os.environ['HOME']}/.ssl/cadcproxy.pem"
 firefly_instance = FireFly()
 print(firefly_instance.url)
