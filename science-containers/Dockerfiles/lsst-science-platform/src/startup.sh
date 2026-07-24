@@ -1,7 +1,7 @@
 #!/bin/bash
 set -a
 export SHELL="bash"
-export CPU_LIMIT="${OMP_NUM_THREADS-1}"
+export CPU_LIMIT="${OMP_NUM_THREADS:-1}"
 export RUNNING_INSIDE_JUPYTERLAB="TRUE"
 export EXTERNAL_INSTANCE_URL="https://data.lsst.cloud"
 export DAF_BUTLER_REPOSITORY_INDEX="https://www.canfar.net/storage/arc/file/projects/LSST/cadc_repositories.yaml"
