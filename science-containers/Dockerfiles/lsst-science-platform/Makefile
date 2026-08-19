@@ -63,13 +63,15 @@ build: dependencies Dockerfile
 	@echo "DAF_BUTLER_VER=$(DAF_BUTLER_VER)"
 	$(BUILDX_BASE) --target deploy --load
 
+# BuildKit cannot attach an SPDX SBOM larger than 40MiB; the LSST stack's
+# inventory exceeds that. Provenance stays here; GitHub attest + cosign
+# still run in the workflow.
 deploy: dependencies Dockerfile
 	@echo "BASE_IMAGE=$(BASE_IMAGE)"
 	@echo "RESOURCES_VER=$(RESOURCES_VER)"
 	@echo "DAF_BUTLER_VER=$(DAF_BUTLER_VER)"
 	$(BUILDX_BASE) \
 		--target deploy \
-		--sbom=true \
 		--provenance=mode=max \
 		$(METADATA_FLAGS) \
 		--push
