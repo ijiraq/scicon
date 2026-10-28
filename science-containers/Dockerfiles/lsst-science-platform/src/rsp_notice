@@ -5,16 +5,28 @@ configured for CANFAR.  If you have issues please contact:
 	   support@canfar.net
 
 Service discovery is populated at session start from
-/arc/projects/LSST/cadc_dataset_map.yaml via the CADC resource-caps
-registry into /etc/nublado/discovery/v1.json.  Your CADC access token
+https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml
+(override with CANFAR_DATASET_MAP) via the CADC resource-caps registry into
+/etc/nublado/discovery/v1.json.  Your CADC access token
 is published where RSPDiscovery expects it
 (/etc/nublado/secrets/token, NUBLADO_TOKEN, ACCESS_TOKEN).
 
+List discovery dataset labels and Butler repository aliases:
+
+        from lsst.rsp import list_datasets, RSPDiscovery
+        from lsst.daf.butler import Butler
+        list_datasets()
+        sorted(Butler.get_known_repos())
+
 Example (CANFAR YouCAT / CAOM services):
 
-        from lsst.rsp import RSPDiscovery
         discovery = RSPDiscovery("dp2")
         tap = discovery.get_tap_client()
+
+Firefly: use the JupyterLab launcher card "Firefly Viewer" (Firefly
+section).  It starts a CANFAR Firefly session if needed and opens it
+in a Lab tab.  Tutorials: use the Tutorials menu; notebooks are fetched
+from CANFAR_TUTORIALS_REPO (default rubin-dp0/tutorial-notebooks@prod).
 
 Rubin-mirrored datasets (dp02, prompt) and HiPS URLs on dp1/dp2 point
 at data.lsst.cloud and need a separate Rubin token, e.g.:

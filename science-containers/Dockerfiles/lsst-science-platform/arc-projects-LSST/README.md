@@ -16,8 +16,9 @@ without rebuilding images.
 
 | File in this directory | Deployed path | Used by |
 | --- | --- | --- |
-| `cadc_dataset_map.yaml` | `/arc/projects/LSST/cadc_dataset_map.yaml` | `populate_discovery.py` → `/etc/nublado/discovery/v1.json` for `lsst.rsp.RSPDiscovery` |
+| `cadc_dataset_map.yaml` | `/arc/projects/LSST/cadc_dataset_map.yaml` (fetched as `https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml`) | `populate_discovery.py` → `/etc/nublado/discovery/v1.json` for `lsst.rsp.RSPDiscovery` |
 | `cadc_repositories.yaml` | `/arc/projects/LSST/cadc_repositories.yaml` | `DAF_BUTLER_REPOSITORY_INDEX` in `startup.sh` (also at `https://www.canfar.net/storage/arc/file/projects/LSST/cadc_repositories.yaml`) |
+| `Welcome.md` | `/arc/projects/LSST/Welcome.md` | Opened at Lab start via `--LabApp.default_url=/lab/tree/arc/projects/LSST/Welcome.md` (also baked into the image as a bootstrap/fallback) |
 
 ## Argo CD deployment
 
@@ -40,11 +41,40 @@ Recommended pattern:
 Do **not** `COPY` these files into the Dockerfile. The container only
 ships `populate_discovery.py` and env wiring that expect the ARC paths.
 
+## How startup reads the dataset map
+
+`startup.sh` runs:
+
+```bash
+python /skaha/populate_discovery.py \
+  --map "${CANFAR_DATASET_MAP:-https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml}"
+```
+
+The map is fetched with a plain **HTTPS GET** (follows the storage portal
+redirect to `ws-uv.canfar.net`). No `canfar.storage` client and no CADC
+credentials are required for this public project file.
+
+Supported `--map` / `CANFAR_DATASET_MAP` forms:
+
+| Form | Example | How it is read |
+| --- | --- | --- |
+| URL (default) | `https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml` | HTTP GET |
+| Local path | `/tmp/my_map.yaml` | Read from disk |
+
+To try a different map without rebuilding the image, set
+`CANFAR_DATASET_MAP` for the session (HTTPS URL or a local file path).
+
 ## Local testing
 
 ```bash
+# Repo copy
 python science-containers/Dockerfiles/lsst-science-platform/src/populate_discovery.py \
   --map science-containers/Dockerfiles/lsst-science-platform/arc-projects-LSST/cadc_dataset_map.yaml \
+  --dry-run
+
+# Deployed copy via the public HTTPS endpoint (no credentials)
+python science-containers/Dockerfiles/lsst-science-platform/src/populate_discovery.py \
+  --map https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml \
   --dry-run
 ```
 
@@ -73,7 +103,11 @@ CANFAR (CADC) and Rubin (Gafaelfawr) tokens are not interchangeable.
 
 ```python
 import os
-from lsst.rsp import RSPDiscovery
+from lsst.rsp import RSPDiscovery, list_datasets
+from lsst.daf.butler import Butler
+
+list_datasets()                 # discovery labels from v1.json
+sorted(Butler.get_known_repos())  # Butler aliases (canfar-dp2, …)
 
 # CANFAR services (session token from /etc/nublado/secrets/token)
 canfar = RSPDiscovery("dp2")
@@ -83,6 +117,11 @@ tap = canfar.get_tap_client()
 rubin = RSPDiscovery("dp02", token=os.environ["RUBIN_TOKEN"])
 hips_url = rubin.get_service_url("hips")
 ```
+
+Firefly is started from the JupyterLab launcher (**Firefly Viewer**), not
+at session start. Tutorials come from the **Tutorials** menu; override
+`CANFAR_TUTORIALS_REPO` (default `rubin-dp0/tutorial-notebooks@prod`) to
+point at a CANFAR fork when ready.
 
 Create Rubin tokens via the RSP token UI:
 https://rsp.lsst.io/guides/auth/creating-user-tokens.html

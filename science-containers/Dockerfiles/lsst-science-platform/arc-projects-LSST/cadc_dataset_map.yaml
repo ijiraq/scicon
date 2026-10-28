@@ -2,9 +2,11 @@
 #
 # Deployed location (outside the container image):
 #   /arc/projects/LSST/cadc_dataset_map.yaml
+# Fetched at session start via:
+#   https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml
 #
-# At session start, populate_discovery.py reads this file and writes
-# /etc/nublado/discovery/v1.json for lsst.rsp.RSPDiscovery.
+# populate_discovery.py writes /etc/nublado/discovery/v1.json for
+# lsst.rsp.RSPDiscovery.
 #
 # Service values may be:
 #   - ivo://...     → resolve via resource-caps + VOSI capabilities (CANFAR/CADC)

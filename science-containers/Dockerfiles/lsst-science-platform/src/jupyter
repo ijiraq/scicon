@@ -1,2 +1,6 @@
 #!/bin/bash
-exec /skaha/startup.sh jupyter $@
+# Skaha calls `jupyter` on PATH. This wrapper loads the LSST environment via
+# startup.sh, which then execs a jupyter binary other than this file.
+# "$@" must stay quoted: Skaha passes --LabApp.app_name="name - JupyterLab"
+# as one argument, and an unquoted $@ turns the hyphen into a positional path.
+exec /skaha/startup.sh jupyter "$@"

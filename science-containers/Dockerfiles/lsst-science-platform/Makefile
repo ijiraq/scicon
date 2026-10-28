@@ -72,7 +72,6 @@ deploy: dependencies Dockerfile
 	@echo "DAF_BUTLER_VER=$(DAF_BUTLER_VER)"
 	$(BUILDX_BASE) \
 		--target deploy \
-		--provenance=mode=max \
 		$(METADATA_FLAGS) \
 		--push
 

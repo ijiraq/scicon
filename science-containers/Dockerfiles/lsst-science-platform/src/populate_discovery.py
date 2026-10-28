@@ -10,6 +10,11 @@ Service map values may be:
 * an IVOID (``ivo://...``) resolved through resource-caps + VOSI capabilities
 * a literal ``https://...`` URL (e.g. Rubin services mirrored into CANFAR discovery)
 * a dict with ``url`` and optional ``versions`` (passed through as-is)
+
+The ``--map`` reference itself may be:
+
+* an ``https://`` or ``http://`` URL (default: public ARC file URL)
+* a local filesystem path
 """
 
 from __future__ import annotations
@@ -20,7 +25,7 @@ import sys
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 try:
@@ -30,7 +35,9 @@ except ImportError:  # pragma: no cover - sciplat images include PyYAML
 
 # Shared ARC config (not baked into the image). Synced via Argo CD; see
 # arc-projects-LSST/README.md in this Dockerfile tree.
-DEFAULT_MAP = Path("/arc/projects/LSST/cadc_dataset_map.yaml")
+DEFAULT_MAP = (
+    "https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml"
+)
 USER_AGENT = "canfar-populate-discovery/1.0"
 
 # Extra version keys to attach when the matching VOSI capability exists.
@@ -72,9 +79,10 @@ SERVICE_VERSION_STANDARDS: dict[str, list[tuple[str, tuple[str, ...]]]] = {
 }
 
 
-def _load_map(path: Path) -> dict[str, Any]:
-    text = path.read_text(encoding="utf-8")
-    if path.suffix.lower() in {".yaml", ".yml"}:
+def _load_map(raw: bytes, ref: str) -> dict[str, Any]:
+    text = raw.decode("utf-8")
+    suffix = PurePosixPath(ref.split("?", 1)[0]).suffix.lower()
+    if suffix in {".yaml", ".yml"}:
         if yaml is None:
             raise RuntimeError(
                 "PyYAML is required to read cadc_dataset_map.yaml; "
@@ -84,7 +92,7 @@ def _load_map(path: Path) -> dict[str, Any]:
     else:
         data = json.loads(text)
     if not isinstance(data, dict):
-        raise ValueError(f"dataset map root must be a mapping: {path}")
+        raise ValueError(f"dataset map root must be a mapping: {ref}")
     return data
 
 
@@ -95,6 +103,13 @@ def _http_get(url: str, timeout: float = 30.0) -> bytes:
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
+
+
+def _read_map_bytes(ref: str) -> bytes:
+    """Fetch the dataset map from an https URL or local path."""
+    if ref.startswith(("https://", "http://")):
+        return _http_get(ref)
+    return Path(ref).expanduser().read_bytes()
 
 
 def parse_resource_caps(text: str) -> dict[str, str]:
@@ -302,9 +317,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--map",
-        type=Path,
         default=DEFAULT_MAP,
-        help=f"dataset map YAML/JSON (default: {DEFAULT_MAP})",
+        help=(
+            "dataset map YAML/JSON as an https:// URL or local path "
+            f"(default: {DEFAULT_MAP})"
+        ),
     )
     parser.add_argument(
         "--output",
@@ -320,12 +337,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        config = _load_map(args.map)
+        raw = _read_map_bytes(args.map)
+        config = _load_map(raw, args.map)
         discovery = build_discovery(config)
-    except FileNotFoundError as exc:
+    except FileNotFoundError:
         print(
-            f"populate_discovery: dataset map not found: {exc.filename}\n"
-            "  Expected /arc/projects/LSST/cadc_dataset_map.yaml "
+            f"populate_discovery: dataset map not found at {args.map}\n"
+            f"  Default is {DEFAULT_MAP} "
             "(deploy via Argo CD; see arc-projects-LSST/README.md).",
             file=sys.stderr,
         )
