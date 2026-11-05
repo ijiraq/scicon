@@ -1,0 +1,18 @@
+{
+  "datasets": {
+    "dp2": {
+      "services": {
+        "tap": {
+          "url": "https://ws-uv.canfar.net/youcat",
+          "versions": {
+            "tables": {
+              "url": "https://ws-uv.canfar.net/youcat/tables"
+            }
+          }
+        }
+      }
+    }
+  },
+  "environment_name": "canfar",
+  "services": {}
+}

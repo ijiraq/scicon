@@ -4,17 +4,44 @@ Rubin Observatory Science Platform Notebook Aspect running and
 configured for CANFAR.  If you have issues please contact:
 	   support@canfar.net
 
-Rubin TAP services access requires an access token. Set the
-environment variable ACCESS_TOKEN to the value of your Rubin Access
-Token.
+Service discovery is populated at session start from
+https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml
+(override with CANFAR_DATASET_MAP) via the CADC resource-caps registry into
+/etc/nublado/discovery/v1.json.  Your CADC access token
+is published where RSPDiscovery expects it
+(/etc/nublado/secrets/token, NUBLADO_TOKEN, ACCESS_TOKEN).
 
-Rubin Access Tokens can be craeted using these instructions:
-	https://rsp.lsst.io/guides/auth/creating-user-tokens.html
+List discovery dataset labels and Butler repository aliases:
+
+        from lsst.rsp import list_datasets, RSPDiscovery
+        from lsst.daf.butler import Butler
+        list_datasets()
+        sorted(Butler.get_known_repos())
+
+Example (CANFAR YouCAT / CAOM services):
+
+        discovery = RSPDiscovery("dp2")
+        tap = discovery.get_tap_client()
+
+Firefly: use the JupyterLab launcher card "Firefly Viewer" (Firefly
+section).  It starts a CANFAR Firefly session if needed and opens it
+in a Lab tab.  Tutorials: use the Tutorials menu; notebooks are fetched
+from CANFAR_TUTORIALS_REPO (default lsst/tutorial-notebooks@main).
+
+Rubin-mirrored datasets (dp02, prompt) and HiPS URLs on dp1/dp2 point
+at data.lsst.cloud and need a separate Rubin token, e.g.:
+
+        import os
+        rubin = RSPDiscovery("dp02", token=os.environ["RUBIN_TOKEN"])
+
+Create Rubin tokens at:
+        https://rsp.lsst.io/guides/auth/creating-user-tokens.html
+
 
 Find useful documentation for the software and Notebook Aspect at:
         https://pipelines.lsst.io
         https://rsp.lsst.io
+        https://repertoire.lsst.io/user-guide/nublado.html
 
 The Rubin Observatory Science Pipelines environment is in:
         /opt/lsst/software/stack
-

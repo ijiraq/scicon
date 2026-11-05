@@ -1,58 +1,63 @@
-import os
+#!/usr/bin/env python3
+"""CLI helper: ensure a CANFAR Firefly session and print its connect URL.
+
+Session startup no longer calls this. The JupyterLab canfar_lab_extensions
+package exposes the same logic via POST /canfar/firefly/ensure.
+"""
+
+from __future__ import annotations
+
 import sys
+
 try:
-    from canfar.sessions import Session
-except Exception as ex:
-    if ex.__class__.__name__ == "ConfigResetRequiredError":
-        _config_file = f"{os.environ['HOME']}/.canfar/config.yaml"
-        os.unlink(_config_file)
+    from canfar_lab_extensions.firefly_session import FireflySession
+except ImportError:
+    # Editable/dev fallback when the package is not on PYTHONPATH yet.
+    import os
+    from pathlib import Path
+
+    try:
         from canfar.sessions import Session
-    else:
-        raise ex
+    except Exception as ex:
+        if ex.__class__.__name__ == "ConfigResetRequiredError":
+            _config_file = Path.home() / ".canfar" / "config.yaml"
+            if _config_file.exists():
+                _config_file.unlink()
+            from canfar.sessions import Session
+        else:
+            raise
 
-import httpx
-import time
+    class FireflySession:  # type: ignore[no-redef]
+        def __init__(self) -> None:
+            self.session = Session()
+            self._url = None
 
-class FireFly:
-    """
-    Class to manage Firefly sessions on CANFAR
-    """
-
-    def __init__(self):
-        self.session = Session() # type: ignore
-        self._url = None
-
-    @property
-    def session_info(self) -> dict:
-        session_list = self.session.fetch("firefly")
-        if len(session_list) == 0:
-            self._launch_firefly()
-            session_list = self.session.fetch("firefly")
-        return session_list[0]
-
-    @property
-    def url(self) -> str:
-        if self._url is None or httpx.request("HEAD", self._url).status_code != 200:
-            self._url = self.get_url()
-        return self._url
-
-    def _launch_firefly(self) -> None:
-        _ = self.session.create(
-            name="firefly",
-            image="images.canfar.net/skaha/firefly:2025.2",
-            kind="firefly",
-        )
-
-    def get_url(self):
-        url = self.session_info["connectURL"]
-        delay = 0
-        # Wait up to 60 seconds for the Firefly instance to become available
-        while httpx.request("HEAD", url).status_code != 200 and delay < 60:
-            time.sleep(5)
-            delay += 5
-        return url
+        @property
+        def url(self) -> str:
+            if self._url is None:
+                sessions = self.session.fetch("firefly")
+                if not sessions:
+                    self.session.create(
+                        name=os.environ.get("CANFAR_FIREFLY_NAME", "firefly"),
+                        image=os.environ.get(
+                            "CANFAR_FIREFLY_IMAGE",
+                            "images.canfar.net/skaha/firefly:2025.2",
+                        ),
+                        kind="firefly",
+                    )
+                    sessions = self.session.fetch("firefly")
+                self._url = sessions[0]["connectURL"]
+            return self._url
 
 
-certificate = f"{os.environ['HOME']}/.ssl/cadcproxy.pem"
-firefly_instance = FireFly()
-print(firefly_instance.url)
+def main() -> int:
+    try:
+        print(FireflySession().url)
+    except Exception as exc:
+        print(f"launch_firefly_on_canfar: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

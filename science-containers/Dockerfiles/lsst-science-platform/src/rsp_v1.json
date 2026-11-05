@@ -1,0 +1,266 @@
+{
+  "datasets": {
+    "dp02": {
+      "butler_config": "https://data.lsst.cloud/api/butler/repo/dp02/butler.yaml",
+      "services": {
+        "cutout": {
+          "url": "https://data.lsst.cloud/api/cutout",
+          "versions": {
+            "soda-async-1.0": {
+              "url": "https://data.lsst.cloud/api/cutout/jobs"
+            },
+            "soda-sync-1.0": {
+              "url": "https://data.lsst.cloud/api/cutout/sync"
+            }
+          }
+        },
+        "datalink": {
+          "url": "https://data.lsst.cloud/api/datalink",
+          "versions": {
+            "datalink-links-1.1": {
+              "url": "https://data.lsst.cloud/api/datalink/links"
+            }
+          }
+        },
+        "gms": {
+          "url": "https://data.lsst.cloud/auth/gms",
+          "versions": {
+            "gms-search-1.0": {
+              "url": "https://data.lsst.cloud/auth/gms"
+            }
+          }
+        },
+        "hips": {
+          "url": "https://data.lsst.cloud/api/hips/v2/dp02/list",
+          "versions": {
+            "hips-list-1.0": {
+              "url": "https://data.lsst.cloud/api/hips/v2/dp02/list"
+            }
+          }
+        },
+        "sia": {
+          "url": "https://data.lsst.cloud/api/sia/dp02",
+          "versions": {
+            "sia-query-2.0": {
+              "url": "https://data.lsst.cloud/api/sia/dp02/query"
+            }
+          }
+        },
+        "tap": {
+          "url": "https://data.lsst.cloud/api/tap",
+          "versions": {
+            "tables": {
+              "url": "https://data.lsst.cloud/api/tap/tables"
+            }
+          }
+        }
+      }
+    },
+    "dp03": {
+      "services": {
+        "gms": {
+          "url": "https://data.lsst.cloud/auth/gms",
+          "versions": {
+            "gms-search-1.0": {
+              "url": "https://data.lsst.cloud/auth/gms"
+            }
+          }
+        },
+        "tap": {
+          "url": "https://data.lsst.cloud/api/ssotap",
+          "versions": {
+            "tables": {
+              "url": "https://data.lsst.cloud/api/ssotap/tables"
+            }
+          }
+        }
+      }
+    },
+    "dp1": {
+      "butler_config": "https://data.lsst.cloud/api/butler/repo/dp1/butler.yaml",
+      "services": {
+        "cutout": {
+          "url": "https://data.lsst.cloud/api/cutout",
+          "versions": {
+            "soda-async-1.0": {
+              "url": "https://data.lsst.cloud/api/cutout/jobs"
+            },
+            "soda-sync-1.0": {
+              "url": "https://data.lsst.cloud/api/cutout/sync"
+            }
+          }
+        },
+        "datalink": {
+          "url": "https://data.lsst.cloud/api/datalink",
+          "versions": {
+            "datalink-links-1.1": {
+              "url": "https://data.lsst.cloud/api/datalink/links"
+            }
+          }
+        },
+        "gms": {
+          "url": "https://data.lsst.cloud/auth/gms",
+          "versions": {
+            "gms-search-1.0": {
+              "url": "https://data.lsst.cloud/auth/gms"
+            }
+          }
+        },
+        "hips": {
+          "url": "https://data.lsst.cloud/api/hips/v2/dp1/list",
+          "versions": {
+            "hips-list-1.0": {
+              "url": "https://data.lsst.cloud/api/hips/v2/dp1/list"
+            }
+          }
+        },
+        "sia": {
+          "url": "https://data.lsst.cloud/api/sia/dp1",
+          "versions": {
+            "sia-query-2.0": {
+              "url": "https://data.lsst.cloud/api/sia/dp1/query"
+            }
+          }
+        },
+        "tap": {
+          "url": "https://data.lsst.cloud/api/tap",
+          "versions": {
+            "tables": {
+              "url": "https://data.lsst.cloud/api/tap/tables"
+            }
+          }
+        }
+      }
+    },
+    "dp2": {
+      "butler_config": "https://data.lsst.cloud/api/butler/repo/dp2/butler.yaml",
+      "services": {
+        "cutout": {
+          "url": "https://data.lsst.cloud/api/cutout",
+          "versions": {
+            "soda-async-1.0": {
+              "url": "https://data.lsst.cloud/api/cutout/jobs"
+            },
+            "soda-sync-1.0": {
+              "url": "https://data.lsst.cloud/api/cutout/sync"
+            }
+          }
+        },
+        "datalink": {
+          "url": "https://data.lsst.cloud/api/datalink",
+          "versions": {
+            "datalink-links-1.1": {
+              "url": "https://data.lsst.cloud/api/datalink/links"
+            }
+          }
+        },
+        "gms": {
+          "url": "https://data.lsst.cloud/auth/gms",
+          "versions": {
+            "gms-search-1.0": {
+              "url": "https://data.lsst.cloud/auth/gms"
+            }
+          }
+        },
+        "hips": {
+          "url": "https://data.lsst.cloud/api/hips/v2/dp2/list",
+          "versions": {
+            "hips-list-1.0": {
+              "url": "https://data.lsst.cloud/api/hips/v2/dp2/list"
+            }
+          }
+        },
+        "sia": {
+          "url": "https://data.lsst.cloud/api/sia/dp2",
+          "versions": {
+            "sia-query-2.0": {
+              "url": "https://data.lsst.cloud/api/sia/dp2/query"
+            }
+          }
+        },
+        "tap": {
+          "url": "https://data.lsst.cloud/api/tap",
+          "versions": {
+            "tables": {
+              "url": "https://data.lsst.cloud/api/tap/tables"
+            }
+          }
+        }
+      }
+    },
+    "prompt": {
+      "services": {
+        "alerts": {
+          "url": "https://data.lsst.cloud/api/alerts"
+        },
+        "gms": {
+          "url": "https://data.lsst.cloud/auth/gms",
+          "versions": {
+            "gms-search-1.0": {
+              "url": "https://data.lsst.cloud/auth/gms"
+            }
+          }
+        }
+      }
+    }
+  },
+  "services": {
+    "internal": {
+      "datalink": {
+        "url": "https://data.lsst.cloud/api/datalink",
+        "versions": {
+          "datalink-links-1.1": {
+            "url": "https://data.lsst.cloud/api/datalink/links"
+          }
+        }
+      },
+      "gafaelfawr": {
+        "url": "https://data.lsst.cloud/auth",
+        "versions": {
+          "v1": {
+            "url": "https://data.lsst.cloud/auth/api/v1"
+          }
+        }
+      },
+      "login": {
+        "url": "https://data.lsst.cloud/login"
+      },
+      "mobu": {
+        "url": "https://data.lsst.cloud/mobu"
+      },
+      "noteburst": {
+        "url": "https://data.lsst.cloud/noteburst",
+        "versions": {
+          "v1": {
+            "url": "https://data.lsst.cloud/noteburst/v1"
+          }
+        }
+      },
+      "nublado-controller": {
+        "url": "https://data.lsst.cloud/nublado"
+      },
+      "repertoire": {
+        "url": "https://data.lsst.cloud/repertoire"
+      },
+      "semaphore": {
+        "url": "https://data.lsst.cloud/semaphore",
+        "versions": {
+          "v1": {
+            "url": "https://data.lsst.cloud/semaphore/v1"
+          }
+        }
+      },
+      "times-square": {
+        "url": "https://data.lsst.cloud/times-square/api",
+        "versions": {
+          "v1": {
+            "url": "https://data.lsst.cloud/times-square/api/v1"
+          }
+        }
+      },
+      "wobbly": {
+        "url": "https://data.lsst.cloud/wobbly"
+      }
+    }
+  }
+}
