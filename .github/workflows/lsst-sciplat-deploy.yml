@@ -1,20 +1,22 @@
 name: Build & Push lsst/sciplat-lab
 
-# Maintainer-gated deploy: merge to main does not ship an image.
-# Primary: Actions → Run workflow (optional base-image VERSION).
-# Secondary: push a tag matching lsst-sciplat-lab-* for a git-auditable ship.
+# A push to main, or a tag matching lsst-sciplat-lab-*, ships an image
+# built FROM lsstsqre/sciplat-lab:latest_daily. Actions → Run workflow can
+# still select latest_release.
 on:
   workflow_dispatch:
     inputs:
       version:
         description: Base lsstsqre/sciplat-lab tag (also used as floating image tag)
         required: true
-        default: latest_release
+        default: latest_daily
         type: choice
         options:
-          - latest_release
           - latest_daily
+          - latest_release
   push:
+    branches:
+      - main
     tags:
       - 'lsst-sciplat-lab-*'
 
@@ -24,8 +26,8 @@ permissions:
 env:
   REGISTRY: images.canfar.net
   IMAGE: lsst/sciplat-lab
-  # Dispatch input when present; tag-triggered runs default to latest_release.
-  VERSION: ${{ github.event.inputs.version || 'latest_release' }}
+  # Dispatch input when present; push of main or a deploy tag uses latest_daily.
+  VERSION: ${{ github.event.inputs.version || 'latest_daily' }}
   MAKEFILE_DIR: science-containers/Dockerfiles/lsst-science-platform
 
 jobs:
