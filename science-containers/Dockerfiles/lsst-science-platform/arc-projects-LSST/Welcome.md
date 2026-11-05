@@ -113,7 +113,7 @@ Image / session name defaults (override with environment variables):
 
 Use the **Tutorials** menu. Notebooks are shallow-cloned on first use from
 `CANFAR_TUTORIALS_REPO` (default
-`https://github.com/rubin-dp0/tutorial-notebooks@prod`) into
+`https://github.com/lsst/tutorial-notebooks@main`) into
 `CANFAR_TUTORIALS_DEST` under your home (default `notebooks/tutorials`).
 
 ---

@@ -67,7 +67,7 @@ RUN mkdir -p /etc/nublado/discovery /etc/nublado/secrets \
 
 # CANFAR Lab UI defaults (override at deploy without rebuilding the extension).
 # Tutorials are cloned on first menu use; Firefly is started from the launcher.
-ENV CANFAR_TUTORIALS_REPO=https://github.com/rubin-dp0/tutorial-notebooks@prod \
+ENV CANFAR_TUTORIALS_REPO=https://github.com/lsst/tutorial-notebooks@main \
     CANFAR_TUTORIALS_DEST=notebooks/tutorials \
     CANFAR_FIREFLY_IMAGE=images.canfar.net/skaha/firefly:2025.2 \
     CANFAR_FIREFLY_NAME=firefly
@@ -80,7 +80,7 @@ ENV CANFAR_TUTORIALS_REPO=https://github.com/rubin-dp0/tutorial-notebooks@prod \
 # canfar_lab_extensions (Firefly launcher + Tutorials menu) is a prebuilt
 # labextension wheel published by https://github.com/ijiraq/canfar_lab_extensions;
 # no node/jlpm runs here.
-ARG CANFAR_LAB_EXT_VERSION=0.1.1
+ARG CANFAR_LAB_EXT_VERSION=0.1.3
 # canfar comes from PyPI as a dependency of canfar_lab_extensions (Firefly /
 # Skaha client). Discovery no longer needs canfar.storage; the dataset map is
 # fetched over HTTPS.

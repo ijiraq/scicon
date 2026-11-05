@@ -120,7 +120,7 @@ hips_url = rubin.get_service_url("hips")
 
 Firefly is started from the JupyterLab launcher (**Firefly Viewer**), not
 at session start. Tutorials come from the **Tutorials** menu; override
-`CANFAR_TUTORIALS_REPO` (default `rubin-dp0/tutorial-notebooks@prod`) to
+`CANFAR_TUTORIALS_REPO` (default `lsst/tutorial-notebooks@main`) to
 point at a CANFAR fork when ready.
 
 Create Rubin tokens via the RSP token UI:
