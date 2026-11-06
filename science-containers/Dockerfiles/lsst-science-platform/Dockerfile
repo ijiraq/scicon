@@ -149,6 +149,9 @@ RUN echo "daf_butler cache key=${DAF_BUTLER_VER}" && \
     FEATURE_BRANCH="$FEATURE_BRANCH" \
     /tmp/install_cadc_lsst_package.sh daf_butler Optional
 
+# mimic some filestructures on the RSP
+RUN ln -s /arc/projects/LSST /rubin
+
 # This is just for when using this as standalong container
 WORKDIR /
 ENTRYPOINT ["/skaha/startup.sh"]
