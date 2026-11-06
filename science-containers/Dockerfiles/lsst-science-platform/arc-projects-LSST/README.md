@@ -89,7 +89,10 @@ python science-containers/Dockerfiles/lsst-science-platform/src/populate_discove
   - a `{url, versions}` dict
 - `dp1` / `dp2`: CANFAR YouCAT, GMS, SIA, SODA cutout, DataLink, plus
   Butler configs on `ws-uv.canfar.net`. HiPS points at Rubin.
-- `dp02` / `prompt`: discovery entries that point at `data.lsst.cloud`.
+- `rubin-dp1` / `rubin-dp2` / `dp02` / `prompt`: discovery entries that
+  point at `data.lsst.cloud`. The `rubin-dp1` / `rubin-dp2` URLs are copied
+  from Rubin's own discovery document
+  (`https://data.lsst.cloud/repertoire/discovery`, datasets `dp1` / `dp2`).
 
 ### Dual-token authentication
 
@@ -99,10 +102,9 @@ CANFAR (CADC) and Rubin (Gafaelfawr) tokens are not interchangeable.
 | Dataset | Default session token (CADC) | Rubin token required |
 | --- | --- | --- |
 | `dp1`, `dp2` | tap, gms, sia, cutout, datalink | hips (Rubin URL) |
-| `dp02`, `prompt` | will not work | all services |
+| `rubin-dp1`, `rubin-dp2`, `dp02`, `prompt` | will not work | all services |
 
 ```python
-import os
 from lsst.rsp import RSPDiscovery, list_datasets
 from lsst.daf.butler import Butler
 
@@ -113,10 +115,20 @@ sorted(Butler.get_known_repos())  # Butler aliases (canfar-dp2, …)
 canfar = RSPDiscovery("dp2")
 tap = canfar.get_tap_client()
 
-# Rubin-mirrored discovery (explicit Rubin token)
-rubin = RSPDiscovery("dp02", token=os.environ["RUBIN_TOKEN"])
-hips_url = rubin.get_service_url("hips")
+# Rubin services: save a token once with login_rubin() or `rubin-login`
+from canfar_tokens import login_rubin, rubin_token
+login_rubin()
+rubin = RSPDiscovery("rubin-dp2", token=rubin_token())
+tap = rubin.get_tap_client()
+butler = Butler("rubin-dp2", collections=["dp2"])
 ```
+
+`canfar_tokens` (baked into the image) stores the token in
+`~/.config/canfar/rubin_token` with mode 600. `rubin_token()` also sets
+`BUTLER_RUBIN_ACCESS_TOKEN`, which Rubin Butler repositories read; without
+it the CADC `daf_butler` fork sends `ACCESS_TOKEN`, the CADC token, to
+`data.lsst.cloud`. `RSPDiscovery` passes its token only to the service
+clients it creates; Butler never reads it.
 
 Firefly is started from the JupyterLab launcher (**Firefly Viewer**), not
 at session start. Tutorials come from the **Tutorials** menu; override

@@ -28,14 +28,20 @@ section).  It starts a CANFAR Firefly session if needed and opens it
 in a Lab tab.  Tutorials: use the Tutorials menu; notebooks are fetched
 from CANFAR_TUTORIALS_REPO (default lsst/tutorial-notebooks@main).
 
-Rubin-mirrored datasets (dp02, prompt) and HiPS URLs on dp1/dp2 point
-at data.lsst.cloud and need a separate Rubin token, e.g.:
+Rubin services (rubin-dp2, rubin-dp1, dp02, prompt) and HiPS URLs on
+dp1/dp2 point at data.lsst.cloud and need a Rubin token.  Create one at
+https://data.lsst.cloud/settings/tokens (scopes read:tap, read:image),
+save it once with:
 
-        import os
-        rubin = RSPDiscovery("dp02", token=os.environ["RUBIN_TOKEN"])
+        rubin-login
 
-Create Rubin tokens at:
-        https://rsp.lsst.io/guides/auth/creating-user-tokens.html
+then in a notebook:
+
+        from canfar_tokens import rubin_token
+        rubin = RSPDiscovery("rubin-dp2", token=rubin_token())
+        butler = Butler("rubin-dp2", collections=["dp2"])
+
+See Welcome.md for the full recipe.
 
 
 Find useful documentation for the software and Notebook Aspect at:

@@ -40,6 +40,8 @@ map). Use them with `RSPDiscovery("<label>")`.
 | --- | --- | --- |
 | `dp1` | CANFAR (CADC) session token | YouCAT / CAOM / CADC GMS; Butler on CANFAR. HiPS URL is Rubin’s and needs a separate Rubin token. |
 | `dp2` | CANFAR (CADC) session token | Same pattern as `dp1` for Data Preview 2. |
+| `rubin-dp1` | **Rubin** token required | Rubin `data.lsst.cloud` services for DP1. |
+| `rubin-dp2` | **Rubin** token required | Rubin `data.lsst.cloud` services for DP2. |
 | `dp02` | **Rubin** token required | Mirrored URLs on `data.lsst.cloud` (DP0.2). |
 | `prompt` | **Rubin** token required | Rubin prompt / alerts APIs. |
 
@@ -63,16 +65,43 @@ discovery = RSPDiscovery("dp2")
 tap = discovery.get_tap_client()
 ```
 
-Rubin-mirrored datasets (`dp02`, `prompt`) and HiPS URLs under `dp1`/`dp2`
-point at `data.lsst.cloud` and need a **separate Rubin token**:
+### Using Rubin services (`rubin-dp2`, `rubin-dp1`, `dp02`, `prompt`)
 
-```python
-import os
-rubin = RSPDiscovery("dp02", token=os.environ["RUBIN_TOKEN"])
-```
+These labels, and the HiPS URLs under `dp1`/`dp2`, point at
+`data.lsst.cloud` and need a **Rubin token**. The CANFAR session token is
+rejected there.
 
-Create Rubin tokens at:
-https://rsp.lsst.io/guides/auth/creating-user-tokens.html
+1. Create a token at https://data.lsst.cloud/settings/tokens with at least
+   the `read:tap` and `read:image` scopes
+   ([instructions](https://rsp.lsst.io/guides/auth/creating-user-tokens.html)).
+2. Save it once, in a notebook cell or with `rubin-login` in a terminal.
+   The token is not echoed and is kept in `~/.config/canfar/rubin_token`
+   (mode 600), not in the notebook:
+
+   ```python
+   from canfar_tokens import login_rubin
+   login_rubin()
+   ```
+
+3. In each notebook:
+
+   ```python
+   from canfar_tokens import rubin_token
+   from lsst.rsp import RSPDiscovery
+   from lsst.daf.butler import Butler
+
+   rubin = RSPDiscovery("rubin-dp2", token=rubin_token())
+   tap = rubin.get_tap_client()
+   sia = rubin.get_sia_client()
+
+   butler = Butler("rubin-dp2", collections=["dp2"])
+   ```
+
+`RSPDiscovery` passes its token only to the TAP, SIA, DataLink, and other
+service clients it creates. Butler does not read it: a `rubin-*` Butler
+reads `BUTLER_RUBIN_ACCESS_TOKEN`, which `rubin_token()` sets, so call
+`rubin_token()` before creating the Butler. `dp2` / `canfar-dp2` Butlers
+keep using the CANFAR token.
 
 ---
 
@@ -85,8 +114,8 @@ Configured via `DAF_BUTLER_REPOSITORY_INDEX` (live list:
 | --- | --- |
 | `dp1`, `canfar-dp1` | CANFAR Butler for DP1 |
 | `dp2`, `canfar-dp2` | CANFAR Butler for DP2 |
-| `rubin-dp1` | Rubin `data.lsst.cloud` DP1 (Rubin auth) |
-| `rubin-dp2` | Rubin `data.lsst.cloud` DP2 (Rubin auth) |
+| `rubin-dp1` | Rubin `data.lsst.cloud` DP1 (Rubin token, see above) |
+| `rubin-dp2` | Rubin `data.lsst.cloud` DP2 (Rubin token, see above) |
 
 Example:
 

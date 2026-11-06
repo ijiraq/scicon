@@ -112,6 +112,17 @@ RUN /skaha/startup.sh bash -lc '\
   && python -c "import jupyterlab.labapp as m; assert m.LabApp.app_name == \"Rubin Science Notebook\", m.LabApp.app_name" \
   && rm -f /tmp/canfar_jupyterlab_branding.py'
 
+# Rubin token helper: login_rubin() / rubin_token() in notebooks, rubin-login
+# in terminals. Same lsst-scipipe site-packages as the branding module.
+COPY src/canfar_tokens.py /tmp/canfar_tokens.py
+COPY src/rubin-login /usr/local/bin/rubin-login
+RUN chmod 755 /usr/local/bin/rubin-login \
+ && /skaha/startup.sh bash -lc '\
+  SP=$(python -c "import sysconfig; print(sysconfig.get_paths()[\"purelib\"])") \
+  && cp /tmp/canfar_tokens.py "$SP/canfar_tokens.py" \
+  && python -c "from canfar_tokens import login_rubin, rubin_token" \
+  && rm -f /tmp/canfar_tokens.py'
+
 # Drop any discovery/token files that earlier `/skaha/startup.sh …` steps may
 # have written as root (before session-only gating). Session UIDs need empty,
 # sticky-writable dirs so they can create v1.json / token themselves.

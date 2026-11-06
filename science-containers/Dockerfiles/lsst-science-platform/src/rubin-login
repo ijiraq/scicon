@@ -1,0 +1,3 @@
+#!/bin/bash
+# Save a Rubin (data.lsst.cloud) token for this user; see canfar_tokens.py.
+exec /skaha/startup.sh python -m canfar_tokens "$@"
