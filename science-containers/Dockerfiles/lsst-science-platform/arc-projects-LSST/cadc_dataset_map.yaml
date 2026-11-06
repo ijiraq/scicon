@@ -20,11 +20,13 @@
 #   - dp1 / dp2: default session token is the CADC token from startup.sh.
 #     CANFAR-resolved services (tap, gms, sia, cutout, datalink) work with it.
 #     hips entries below point at Rubin and will NOT authenticate with that
-#     CADC token; call them only with an explicit Rubin token, or use the
-#     Rubin-mirrored datasets (dp02 / prompt) instead.
-#   - dp02 / prompt: URLs point at data.lsst.cloud. Use a Rubin token:
-#       RSPDiscovery("dp02", token=os.environ["RUBIN_TOKEN"])
+#     CADC token; use rubin-dp1 / rubin-dp2 for Rubin HiPS.
+#   - rubin-dp1 / rubin-dp2 / dp02 / prompt: URLs point at data.lsst.cloud.
+#     Pass a Rubin token:
+#       RSPDiscovery("rubin-dp2", token=rubin_token)
 #     Do not expect the default CANFAR ACCESS_TOKEN / NUBLADO_TOKEN to work.
+#   rubin-dp1 / rubin-dp2 URLs are copied from Rubin's own discovery document,
+#   https://data.lsst.cloud/repertoire/discovery (datasets dp1 / dp2).
 #
 # Source of truth: science-containers/.../arc-projects-LSST/
 # Sync to ARC via Argo CD (see README.md in that directory).
@@ -90,6 +92,86 @@ datasets:
             url: https://data.lsst.cloud/api/hips/v2/dp2/list
 
   # --- Rubin-mirrored datasets (require a Rubin Gafaelfawr token) ---
+  rubin-dp1:
+    description: >-
+      Data Preview 1 on Rubin data.lsst.cloud. Authenticate with a Rubin
+      token, not the CANFAR session token.
+    docs_url: https://dp1.lsst.io/
+    butler_config: https://data.lsst.cloud/api/butler/repo/dp1/butler.yaml
+    services:
+      tap:
+        url: https://data.lsst.cloud/api/tap
+        versions:
+          tables:
+            url: https://data.lsst.cloud/api/tap/tables
+      sia:
+        url: https://data.lsst.cloud/api/sia/dp1
+        versions:
+          sia-query-2.0:
+            url: https://data.lsst.cloud/api/sia/dp1/query
+      cutout:
+        url: https://data.lsst.cloud/api/cutout
+        versions:
+          soda-async-1.0:
+            url: https://data.lsst.cloud/api/cutout/jobs
+          soda-sync-1.0:
+            url: https://data.lsst.cloud/api/cutout/sync
+      datalink:
+        url: https://data.lsst.cloud/api/datalink
+        versions:
+          datalink-links-1.1:
+            url: https://data.lsst.cloud/api/datalink/links
+      gms:
+        url: https://data.lsst.cloud/auth/gms
+        versions:
+          gms-search-1.0:
+            url: https://data.lsst.cloud/auth/gms
+      hips:
+        url: https://data.lsst.cloud/api/hips/v2/dp1/list
+        versions:
+          hips-list-1.0:
+            url: https://data.lsst.cloud/api/hips/v2/dp1/list
+
+  rubin-dp2:
+    description: >-
+      Data Preview 2 on Rubin data.lsst.cloud. Authenticate with a Rubin
+      token, not the CANFAR session token.
+    docs_url: https://dp2.lsst.io/
+    butler_config: https://data.lsst.cloud/api/butler/repo/dp2/butler.yaml
+    services:
+      tap:
+        url: https://data.lsst.cloud/api/tap
+        versions:
+          tables:
+            url: https://data.lsst.cloud/api/tap/tables
+      sia:
+        url: https://data.lsst.cloud/api/sia/dp2
+        versions:
+          sia-query-2.0:
+            url: https://data.lsst.cloud/api/sia/dp2/query
+      cutout:
+        url: https://data.lsst.cloud/api/cutout
+        versions:
+          soda-async-1.0:
+            url: https://data.lsst.cloud/api/cutout/jobs
+          soda-sync-1.0:
+            url: https://data.lsst.cloud/api/cutout/sync
+      datalink:
+        url: https://data.lsst.cloud/api/datalink
+        versions:
+          datalink-links-1.1:
+            url: https://data.lsst.cloud/api/datalink/links
+      gms:
+        url: https://data.lsst.cloud/auth/gms
+        versions:
+          gms-search-1.0:
+            url: https://data.lsst.cloud/auth/gms
+      hips:
+        url: https://data.lsst.cloud/api/hips/v2/dp2/list
+        versions:
+          hips-list-1.0:
+            url: https://data.lsst.cloud/api/hips/v2/dp2/list
+
   dp02:
     description: >-
       DP0.2 discovery entries pointing at Rubin data.lsst.cloud services.
