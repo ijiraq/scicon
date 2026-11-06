@@ -1,3 +1,9 @@
 #!/bin/bash
 # Save a Rubin (data.lsst.cloud) token for this user; see canfar_tokens.py.
-exec /skaha/startup.sh python -m canfar_tokens "$@"
+# Lab terminals already have the LSST env; avoid startup.sh, which re-sources
+# /etc/profile and loadLSST.bash before Python starts.
+case "${CONDA_DEFAULT_ENV:-}" in
+  lsst-scipipe*) ;;
+  *) . /opt/lsst/software/stack/loadLSST.bash ;;
+esac
+exec python -m canfar_tokens "$@"

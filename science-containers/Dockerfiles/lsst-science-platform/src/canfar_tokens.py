@@ -85,7 +85,16 @@ def rubin_token() -> str:
     return token
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    argparse.ArgumentParser(
+        prog="rubin-login",
+        description=(
+            f"Save a Rubin token (create one at {TOKEN_URL}) to {TOKEN_FILE}. "
+            "Notebooks read it with canfar_tokens.rubin_token()."
+        ),
+    ).parse_args(argv)
     try:
         login_rubin()
     except (ValueError, KeyboardInterrupt, EOFError) as exc:
