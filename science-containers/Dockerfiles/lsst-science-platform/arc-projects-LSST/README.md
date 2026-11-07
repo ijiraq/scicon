@@ -131,9 +131,16 @@ it the CADC `daf_butler` fork sends `ACCESS_TOKEN`, the CADC token, to
 clients it creates; Butler never reads it.
 
 Firefly is started from the JupyterLab launcher (**Firefly Viewer**), not
-at session start. Tutorials come from the **Tutorials** menu; override
-`CANFAR_TUTORIALS_REPO` (default `lsst/tutorial-notebooks@main`) to
-point at a CANFAR fork when ready.
+at session start. Tutorials come from the **Tutorials** menu, built from
+`CANFAR_TUTORIALS_REPO`: a space-separated list of
+`[Label=]url[@branch][#subdir]` items (see the
+[canfar_lab_extensions README](https://github.com/ijiraq/canfar_lab_extensions#tutorials-repositories)).
+The image default shows Rubin's `lsst/tutorial-notebooks@main` at the top
+and the `sciplat-lab/` folder of
+[ijiraq/canfar-tutorials](https://github.com/ijiraq/canfar-tutorials) as a
+**CANFAR** submenu. Add CANFAR sciplat notebooks to that folder; they appear
+in new sessions without an image rebuild. If that repository moves (for
+example to opencadc), change the URL in the Dockerfile `ENV` line.
 
 Create Rubin tokens via the RSP token UI:
 https://rsp.lsst.io/guides/auth/creating-user-tokens.html

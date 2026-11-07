@@ -140,10 +140,19 @@ Image / session name defaults (override with environment variables):
 
 ## Tutorials
 
-Use the **Tutorials** menu. Notebooks are shallow-cloned on first use from
-`CANFAR_TUTORIALS_REPO` (default
-`https://github.com/lsst/tutorial-notebooks@main`) into
-`CANFAR_TUTORIALS_DEST` under your home (default `notebooks/tutorials`).
+Use the **Tutorials** menu. It lists Rubin's current tutorials
+(`https://github.com/lsst/tutorial-notebooks@main`) and, under **CANFAR**,
+CANFAR-specific notebooks from the `sciplat-lab/` folder of
+`https://github.com/ijiraq/canfar-tutorials`. Opening a notebook saves a copy
+under `CANFAR_TUTORIALS_DEST` in your home (default `notebooks/tutorials`;
+CANFAR notebooks go in `notebooks/tutorials/CANFAR/`).
+
+The menu comes from `CANFAR_TUTORIALS_REPO`, a space-separated list of
+`[Label=]url[@branch][#subdir]` items. The image default is:
+
+```text
+https://github.com/lsst/tutorial-notebooks@main CANFAR=https://github.com/ijiraq/canfar-tutorials@main#sciplat-lab
+```
 
 ---
 

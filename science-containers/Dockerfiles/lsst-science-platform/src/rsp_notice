@@ -25,8 +25,9 @@ Example (CANFAR YouCAT / CAOM services):
 
 Firefly: use the JupyterLab launcher card "Firefly Viewer" (Firefly
 section).  It starts a CANFAR Firefly session if needed and opens it
-in a Lab tab.  Tutorials: use the Tutorials menu; notebooks are fetched
-from CANFAR_TUTORIALS_REPO (default lsst/tutorial-notebooks@main).
+in a Lab tab.  Tutorials: use the Tutorials menu.  It lists Rubin's
+lsst/tutorial-notebooks@main plus a CANFAR submenu from the sciplat-lab/
+folder of ijiraq/canfar-tutorials (set by CANFAR_TUTORIALS_REPO).
 
 Rubin services (rubin-dp2, rubin-dp1, dp02, prompt) and HiPS URLs on
 dp1/dp2 point at data.lsst.cloud and need a Rubin token.  Create one at
