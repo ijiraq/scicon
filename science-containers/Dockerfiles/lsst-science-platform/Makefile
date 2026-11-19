@@ -25,7 +25,7 @@ pkg_ver_arg = $(shell echo $(1) | tr '[:lower:]' '[:upper:]')_VER
 # Used only as a Docker cache key; the install script always reads the pin
 # from the image being built. Do not recurse through $(MAKE) here — a nested
 # make drops command-line VERSION and falls back to latest_daily.
-probe_eups = docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash $(BASE_IMAGE) -c 'source /opt/lsst/software/stack/loadLSST.bash >/dev/null 2>&1 && setup lsst_distrib >/dev/null 2>&1 && TABLE=$$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table && VER=$$(awk "/setup$(2)\\($(1)/ { gsub(/)/, \"\", \$$NF); print \$$NF; exit }" "$$TABLE") && if [ -z "$$VER" ]; then VER=$$(eups list -s $(1) | awk "{print \$$2; exit}"); fi && echo "$$VER"'
+probe_eups = docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash $(BASE_IMAGE) -c 'source /opt/lsst/software/stack/loadLSST.bash >/dev/null 2>&1 && setup lsst_distrib >/dev/null 2>&1 && TABLE=$$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table && VER=$$(awk "/setup$(2)\\($(1)/ { gsub(/)/, \"\", \$$NF); print \$$NF; exit }" "$$TABLE") && if [ -z "$$VER" ]; then VER=$$(basename "$$(eups list -s -d $(1))"); fi && echo "$$VER"'
 
 RESOURCES_VER ?= $(shell $(call probe_eups,resources,$(CADC_KIND_resources)))
 DAF_BUTLER_VER ?= $(shell $(call probe_eups,daf_butler,$(CADC_KIND_daf_butler)))

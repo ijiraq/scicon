@@ -36,13 +36,15 @@ setup lsst_distrib
 
 # Individual package pin from the metapackage table (e.g. setupRequired(resources …)).
 # Instrument packages like obs_subaru are listed under lsst_obs, not lsst_distrib;
-# fall back to the version currently setup by lsst_distrib in that case.
+# fall back to the setup product's install directory name (the EUPS version).
+# Do not parse `eups list -s` columns — those are ambiguous and can match
+# related products (e.g. obs_subaru_data vs obs_subaru).
 TABLE="$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table"
 PINNED="$(awk -v pkg="$PACKAGE" -v kind="$SETUP_KIND" \
     'index($0, "setup" kind "(" pkg) { gsub(/)/, "", $NF); print $NF; exit }' \
     "$TABLE")"
 if [ -z "$PINNED" ]; then
-    PINNED="$(eups list -s "$PACKAGE" | awk '{print $2; exit}')"
+    PINNED="$(basename "$(eups list -s -d "$PACKAGE")")"
 fi
 test -n "$PINNED"
 echo "EUPS pin for ${PACKAGE}: ${PINNED}"
@@ -58,7 +60,10 @@ git clone \
     "$SRC"
 cd "$SRC"
 git remote add upstream "https://github.com/lsst/${PACKAGE}.git"
+# Fetch main for ancestry checks, then the pin SHA explicitly (GitHub allows
+# fetch-by-SHA; the pin may be older than — or not tip of — main).
 git fetch --no-tags upstream main
+git fetch --no-tags upstream "$UPSTREAM_COMMIT"
 # EUPS pin is a specific upstream commit (often behind main). Rebase the
 # feature branch onto that pin — do not require pin == upstream/main HEAD.
 PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}")"
