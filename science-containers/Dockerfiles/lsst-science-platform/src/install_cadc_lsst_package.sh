@@ -6,10 +6,8 @@
 #             default FORK_REPO=lsst_<package> (override for e.g. obs_subaru)
 #   upstream: https://github.com/lsst/<package>
 #   branch:   $FEATURE_BRANCH (default: cadc_datastore), rebased onto the
-#             per-package EUPS pin from lsst_distrib.table when present, else
-#             the version currently setup by lsst_distrib
-#             (setupRequired/setupOptional line for this package — not the
-#             lsst_distrib metapackage version itself).
+#             per-package EUPS pin from lsst_distrib.table or lsst_obs.table
+#             (exact product name; never substring-match e.g. obs_subaru_data).
 #
 # Usage:
 #   FEATURE_BRANCH=cadc_datastore \
@@ -34,20 +32,51 @@ echo "Installing ${PACKAGE} from ijiraq/${FORK_REPO}@${FEATURE_BRANCH} (kind=${S
 source /opt/lsst/software/stack/loadLSST.bash
 setup lsst_distrib
 
-# Individual package pin from the metapackage table (e.g. setupRequired(resources …)).
-# Instrument packages like obs_subaru are listed under lsst_obs, not lsst_distrib;
-# fall back to the setup product's install directory name (the EUPS version).
-# Do not parse `eups list -s` columns — those are ambiguous and can match
-# related products (e.g. obs_subaru_data vs obs_subaru).
+# Individual package pin from a metapackage table (setupRequired/setupOptional).
+# Match the product name exactly — EUPS and naive substring searches both match
+# longer names (obs_subaru → obs_subaru_data → wrong git SHA / wrong pin).
+# Instrument packages live in lsst_obs.table, not lsst_distrib.table.
+_pin_from_table() {
+    local table="$1"
+    [ -f "$table" ] || return 0
+    awk -v pkg="$PACKAGE" -v kind="$SETUP_KIND" '
+        $0 ~ ("setup" kind "\\(" pkg "([ )]|$)") {
+            gsub(/)/, "", $NF); print $NF; exit
+        }' "$table"
+}
+
+PIN_SOURCE=""
 TABLE="$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table"
-PINNED="$(awk -v pkg="$PACKAGE" -v kind="$SETUP_KIND" \
-    'index($0, "setup" kind "(" pkg) { gsub(/)/, "", $NF); print $NF; exit }' \
-    "$TABLE")"
+PINNED="$(_pin_from_table "$TABLE")"
+if [ -n "$PINNED" ]; then
+    PIN_SOURCE="lsst_distrib.table"
+fi
 if [ -z "$PINNED" ]; then
-    PINNED="$(basename "$(eups list -s -d "$PACKAGE")")"
+    # lsst_obs is setupOptional under lsst_distrib; ensure its table is visible.
+    setup lsst_obs >/dev/null 2>&1 || true
+    LSST_OBS_DIR="$(eups list -s -e -d lsst_obs 2>/dev/null || true)"
+    if [ -n "$LSST_OBS_DIR" ] && [ -f "${LSST_OBS_DIR}/ups/lsst_obs.table" ]; then
+        PINNED="$(_pin_from_table "${LSST_OBS_DIR}/ups/lsst_obs.table")"
+        if [ -n "$PINNED" ]; then
+            PIN_SOURCE="lsst_obs.table"
+        fi
+    fi
+fi
+if [ -z "$PINNED" ]; then
+    # Exact product only (-e); without it, eups list matches obs_subaru_data too.
+    EUPS_DIR="$(eups list -s -e -d "$PACKAGE" 2>/dev/null || true)"
+    if [ -n "$EUPS_DIR" ]; then
+        PINNED="$(basename "$EUPS_DIR")"
+        PIN_SOURCE="eups-exact"
+    fi
 fi
 test -n "$PINNED"
-echo "EUPS pin for ${PACKAGE}: ${PINNED}"
+echo "EUPS pin for ${PACKAGE}: ${PINNED} (source=${PIN_SOURCE})"
+
+# #region agent log
+_dbg() { echo "DEBUG_AGENT_LOG $1"; }
+_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"F\",\"location\":\"install_cadc_lsst_package.sh:pin-source\",\"message\":\"eups pin source\",\"data\":{\"package\":\"${PACKAGE}\",\"pinned\":\"${PINNED}\",\"pinSource\":\"${PIN_SOURCE}\"},\"timestamp\":$(date +%s000)}"
+# #endregion
 
 UPSTREAM_COMMIT="$(echo "$PINNED" | sed -E 's/^g//; s/\+.*//')"
 SRC="/tmp/${PACKAGE}"
@@ -66,9 +95,8 @@ git remote add upstream "https://github.com/lsst/${PACKAGE}.git"
 git fetch --no-tags upstream main
 
 # #region agent log
-_dbg() { echo "DEBUG_AGENT_LOG $1"; }
 _RESOLVED=false
-_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix}\",\"hypothesisId\":\"A\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"pin resolve inputs\",\"data\":{\"package\":\"${PACKAGE}\",\"pinned\":\"${PINNED}\",\"upstreamCommit\":\"${UPSTREAM_COMMIT}\",\"commitLen\":${#UPSTREAM_COMMIT}},\"timestamp\":$(date +%s000)}"
+_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"A\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"pin resolve inputs\",\"data\":{\"package\":\"${PACKAGE}\",\"pinned\":\"${PINNED}\",\"pinSource\":\"${PIN_SOURCE}\",\"upstreamCommit\":\"${UPSTREAM_COMMIT}\",\"commitLen\":${#UPSTREAM_COMMIT}},\"timestamp\":$(date +%s000)}"
 # #endregion
 
 PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}" 2>/dev/null || true)"
@@ -77,19 +105,19 @@ if [ -n "$PIN_FULL" ]; then
 fi
 
 # #region agent log
-_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix}\",\"hypothesisId\":\"D\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"rev-parse after fetch main\",\"data\":{\"upstreamCommit\":\"${UPSTREAM_COMMIT}\",\"pinFull\":\"${PIN_FULL}\",\"resolved\":${_RESOLVED}},\"timestamp\":$(date +%s000)}"
+_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"D\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"rev-parse after fetch main\",\"data\":{\"upstreamCommit\":\"${UPSTREAM_COMMIT}\",\"pinFull\":\"${PIN_FULL}\",\"resolved\":${_RESOLVED}},\"timestamp\":$(date +%s000)}"
 # #endregion
 
 if [ -z "$PIN_FULL" ]; then
     if [[ "$UPSTREAM_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
         # #region agent log
-        _dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix}\",\"hypothesisId\":\"A\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"fetching full sha fallback\",\"data\":{\"sha\":\"${UPSTREAM_COMMIT}\"},\"timestamp\":$(date +%s000)}"
+        _dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"A\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"fetching full sha fallback\",\"data\":{\"sha\":\"${UPSTREAM_COMMIT}\"},\"timestamp\":$(date +%s000)}"
         # #endregion
         git fetch --no-tags upstream "$UPSTREAM_COMMIT"
         PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}")"
     else
         # #region agent log
-        _dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix}\",\"hypothesisId\":\"B\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"pin not on main and not full sha\",\"data\":{\"upstreamCommit\":\"${UPSTREAM_COMMIT}\"},\"timestamp\":$(date +%s000)}"
+        _dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"B\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"pin not on main and not full sha\",\"data\":{\"upstreamCommit\":\"${UPSTREAM_COMMIT}\"},\"timestamp\":$(date +%s000)}"
         # #endregion
         echo "ERROR: EUPS pin commit ${UPSTREAM_COMMIT} not found on upstream/main" >&2
         exit 1

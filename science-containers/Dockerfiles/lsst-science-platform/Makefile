@@ -19,14 +19,11 @@ CADC_KIND_daf_butler = Optional
 CADC_KIND_obs_subaru = Required
 pkg_ver_arg = $(shell echo $(1) | tr '[:lower:]' '[:upper:]')_VER
 
-# Per-package EUPS pin from lsst_distrib.table (setupRequired/setupOptional),
-# with fallback to the version currently setup by lsst_distrib (needed for
-# packages only listed under lsst_obs, e.g. obs_subaru).
-# Used only as a Docker cache key; the install script always reads the pin
-# from the image being built. Do not recurse through $(MAKE) here — a nested
-# make drops command-line VERSION and falls back to latest_daily.
-probe_eups = docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash $(BASE_IMAGE) -c 'source /opt/lsst/software/stack/loadLSST.bash >/dev/null 2>&1 && setup lsst_distrib >/dev/null 2>&1 && TABLE=$$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table && VER=$$(awk "/setup$(2)\\($(1)/ { gsub(/)/, \"\", \$$NF); print \$$NF; exit }" "$$TABLE") && if [ -z "$$VER" ]; then VER=$$(basename "$$(eups list -s -d $(1))"); fi && echo "$$VER"'
-
+# Per-package EUPS pin (exact product name). Used only as a Docker cache key;
+# the install script always re-reads the pin from the image being built.
+# Do not recurse through $(MAKE) here — a nested make drops command-line
+# VERSION and falls back to latest_daily.
+probe_eups = docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp -v $(CURDIR)/src/probe_eups_pin.sh:/tmp/probe_eups_pin.sh:ro --entrypoint bash $(BASE_IMAGE) /tmp/probe_eups_pin.sh $(1) $(2)
 RESOURCES_VER ?= $(shell $(call probe_eups,resources,$(CADC_KIND_resources)))
 DAF_BUTLER_VER ?= $(shell $(call probe_eups,daf_butler,$(CADC_KIND_daf_butler)))
 OBS_SUBARU_VER ?= $(shell $(call probe_eups,obs_subaru,$(CADC_KIND_obs_subaru)))
