@@ -35,14 +35,15 @@ RUN curl https://ds9.si.edu/download/centos-stream-9_x86_64/ds9.centos-stream-9_
 RUN curl https://ds9.si.edu/download/centos-stream-9_x86_64/xpa.centos-stream-9_x86_64.2.2.1.tar.gz | tar -zx -f - -C /usr/bin
 
 
-# Add our own MOTD and the JupyterLab welcome page (also under ARC path so
-# LabApp.default_url=/lab/tree/arc/projects/LSST/Welcome.md works when the
-# notebook root is /). Production ARC mounts may overlay /arc; keep a baked
-# fallback and sync the same file via Argo (arc-projects-LSST/Welcome.md).
+# Add our own MOTD and the JupyterLab welcome page under /rubin (symlink to
+# /arc/projects/LSST) so LabApp.default_url=/lab/tree/rubin/Welcome.md works
+# when the notebook root is /. Production ARC mounts may overlay /arc; keep a
+# baked fallback and sync the same file via Argo (arc-projects-LSST/Welcome.md).
 COPY src/rsp_notice /usr/local/share/jupyterlab/etc/rsp_notice
 COPY src/Welcome.md /usr/local/share/jupyterlab/etc/Welcome.md
 RUN mkdir -p /arc/projects/LSST \
- && cp /usr/local/share/jupyterlab/etc/Welcome.md /arc/projects/LSST/Welcome.md
+ && ln -sfn /arc/projects/LSST /rubin \
+ && cp /usr/local/share/jupyterlab/etc/Welcome.md /rubin/Welcome.md
 
 # The skaha platform expects to find 'jupyter' in the path
 # but we need to activate the correct conda first.
@@ -160,9 +161,6 @@ RUN echo "obs_subaru cache key=${OBS_SUBARU_VER}" && \
     FEATURE_BRANCH="$OBS_SUBARU_BRANCH" \
     FORK_REPO=obs_subaru \
     /tmp/install_cadc_lsst_package.sh obs_subaru Required
-
-# mimic some filestructures on the RSP
-RUN ln -s /arc/projects/LSST /rubin
 
 # This is just for when using this as standalong container
 WORKDIR /

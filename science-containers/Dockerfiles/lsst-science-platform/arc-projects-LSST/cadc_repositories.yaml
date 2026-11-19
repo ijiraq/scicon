@@ -1,7 +1,7 @@
 # Butler repository index for CANFAR LSST sessions.
 #
-# Deployed location (outside the container image):
-#   /arc/projects/LSST/cadc_repositories.yaml
+# Session path (/rubin → /arc/projects/LSST):
+#   /rubin/cadc_repositories.yaml
 #
 # Referenced by startup.sh as DAF_BUTLER_REPOSITORY_INDEX
 # (also served at

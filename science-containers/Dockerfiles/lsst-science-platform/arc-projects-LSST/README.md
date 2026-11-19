@@ -2,15 +2,12 @@
 
 Files in this directory are **not** baked into the LSST science-platform
 container image. They are the source of truth for configuration that must
-live on shared ARC storage at:
+live on shared ARC storage at `/arc/projects/LSST/`.
 
-```text
-/arc/projects/LSST/
-```
-
-Session startup scripts (for example `startup.sh` in the sciplat image)
-read these paths at runtime so operators can update service mappings
-without rebuilding images.
+In sciplat-lab sessions, prefer the RSP-style path **`/rubin/`**, which is a
+symlink to `/arc/projects/LSST`. Session code and docs should reference
+`/rubin/...`; Argo still publishes to the ARC path, and HTTPS fetch URLs keep
+the `…/arc/file/projects/LSST/…` form.
 
 ## Image-baked package overlays (related)
 
@@ -24,11 +21,11 @@ few LSST packages (see `Dockerfile` / `install_cadc_lsst_package.sh`):
 
 ## Files
 
-| File in this directory | Deployed path | Used by |
+| File in this directory | Session path (`/rubin` → ARC) | Used by |
 | --- | --- | --- |
-| `cadc_dataset_map.yaml` | `/arc/projects/LSST/cadc_dataset_map.yaml` (fetched as `https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml`) | `populate_discovery.py` → `/etc/nublado/discovery/v1.json` for `lsst.rsp.RSPDiscovery` |
-| `cadc_repositories.yaml` | `/arc/projects/LSST/cadc_repositories.yaml` | `DAF_BUTLER_REPOSITORY_INDEX` in `startup.sh` (also at `https://www.canfar.net/storage/arc/file/projects/LSST/cadc_repositories.yaml`) |
-| `Welcome.md` | `/arc/projects/LSST/Welcome.md` | Opened at Lab start via `--LabApp.default_url=/lab/tree/arc/projects/LSST/Welcome.md` (also baked into the image as a bootstrap/fallback) |
+| `cadc_dataset_map.yaml` | `/rubin/cadc_dataset_map.yaml` (fetched as `https://www.canfar.net/storage/arc/file/projects/LSST/cadc_dataset_map.yaml`) | `populate_discovery.py` → `/etc/nublado/discovery/v1.json` for `lsst.rsp.RSPDiscovery` |
+| `cadc_repositories.yaml` | `/rubin/cadc_repositories.yaml` | `DAF_BUTLER_REPOSITORY_INDEX` in `startup.sh` (also at `https://www.canfar.net/storage/arc/file/projects/LSST/cadc_repositories.yaml`) |
+| `Welcome.md` | `/rubin/Welcome.md` | Opened at Lab start via `--LabApp.default_url=/lab/tree/rubin/Welcome.md` (also baked into the image as a bootstrap/fallback) |
 
 ## Argo CD deployment
 
@@ -42,7 +39,7 @@ Recommended pattern:
 1. Keep the canonical copies in this directory (this repo).
 2. Add an Argo CD / GitOps sync that publishes them to
    `/arc/projects/LSST/` on the CANFAR storage backend used by Skaha
-   sessions.
+   sessions (visible in-container as `/rubin/`).
 3. After changing `cadc_dataset_map.yaml`, new notebook sessions pick up
    the update on next start (discovery JSON is regenerated each startup).
 4. After changing `cadc_repositories.yaml`, new sessions see updated Butler

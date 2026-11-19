@@ -46,10 +46,11 @@ resolve_jupyter() {
   return 1
 }
 
-# Ensure Welcome.md is visible under Skaha's notebook root (/). Prefer the
-# ARC project path (Argo / shared storage); fall back to the image copy.
+# Ensure Welcome.md is visible under Skaha's notebook root (/). Prefer /rubin
+# (symlink to /arc/projects/LSST — Argo / shared storage); fall back to the
+# image copy.
 ensure_welcome() {
-  local dest=/arc/projects/LSST/Welcome.md
+  local dest=/rubin/Welcome.md
   local baked=/usr/local/share/jupyterlab/etc/Welcome.md
   if [ -f "$dest" ]; then
     printf '%s\n' "$dest"

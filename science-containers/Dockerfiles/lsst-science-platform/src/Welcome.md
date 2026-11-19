@@ -24,7 +24,7 @@ At startup this container:
 4. Points Butler repository aliases at
    `DAF_BUTLER_REPOSITORY_INDEX` →
    `https://www.canfar.net/storage/arc/file/projects/LSST/cadc_repositories.yaml`
-   (same file as `/arc/projects/LSST/cadc_repositories.yaml` on ARC).
+   (same file as `/rubin/cadc_repositories.yaml` on the session filesystem).
 
 Firefly is **not** started until you open it from the Lab launcher.
 Tutorials are cloned on first use from the Tutorials menu.
@@ -171,5 +171,6 @@ The Rubin Observatory Science Pipelines environment is in:
 /opt/lsst/software/stack
 ```
 
-This welcome page lives at `/arc/projects/LSST/Welcome.md` (also shipped in
-the image under `/usr/local/share/jupyterlab/etc/Welcome.md` as a fallback).
+This welcome page lives at `/rubin/Welcome.md` (symlink to
+`/arc/projects/LSST/Welcome.md`; also shipped in the image under
+`/usr/local/share/jupyterlab/etc/Welcome.md` as a fallback).
