@@ -60,13 +60,44 @@ git clone \
     "$SRC"
 cd "$SRC"
 git remote add upstream "https://github.com/lsst/${PACKAGE}.git"
-# Fetch main for ancestry checks, then the pin SHA explicitly (GitHub allows
-# fetch-by-SHA; the pin may be older than — or not tip of — main).
+# Fetch main so the EUPS pin (usually an ancestor) is in the object DB.
+# Do NOT `git fetch upstream <short-sha>`: GitHub rejects abbreviated SHAs as
+# remote refs ("couldn't find remote ref"). Fetch-by-SHA needs the full 40-char id.
 git fetch --no-tags upstream main
-git fetch --no-tags upstream "$UPSTREAM_COMMIT"
+
+# #region agent log
+_dbg() { echo "DEBUG_AGENT_LOG $1"; }
+_RESOLVED=false
+_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix}\",\"hypothesisId\":\"A\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"pin resolve inputs\",\"data\":{\"package\":\"${PACKAGE}\",\"pinned\":\"${PINNED}\",\"upstreamCommit\":\"${UPSTREAM_COMMIT}\",\"commitLen\":${#UPSTREAM_COMMIT}},\"timestamp\":$(date +%s000)}"
+# #endregion
+
+PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}" 2>/dev/null || true)"
+if [ -n "$PIN_FULL" ]; then
+    _RESOLVED=true
+fi
+
+# #region agent log
+_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix}\",\"hypothesisId\":\"D\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"rev-parse after fetch main\",\"data\":{\"upstreamCommit\":\"${UPSTREAM_COMMIT}\",\"pinFull\":\"${PIN_FULL}\",\"resolved\":${_RESOLVED}},\"timestamp\":$(date +%s000)}"
+# #endregion
+
+if [ -z "$PIN_FULL" ]; then
+    if [[ "$UPSTREAM_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+        # #region agent log
+        _dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix}\",\"hypothesisId\":\"A\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"fetching full sha fallback\",\"data\":{\"sha\":\"${UPSTREAM_COMMIT}\"},\"timestamp\":$(date +%s000)}"
+        # #endregion
+        git fetch --no-tags upstream "$UPSTREAM_COMMIT"
+        PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}")"
+    else
+        # #region agent log
+        _dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix}\",\"hypothesisId\":\"B\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"pin not on main and not full sha\",\"data\":{\"upstreamCommit\":\"${UPSTREAM_COMMIT}\"},\"timestamp\":$(date +%s000)}"
+        # #endregion
+        echo "ERROR: EUPS pin commit ${UPSTREAM_COMMIT} not found on upstream/main" >&2
+        exit 1
+    fi
+fi
+
 # EUPS pin is a specific upstream commit (often behind main). Rebase the
 # feature branch onto that pin — do not require pin == upstream/main HEAD.
-PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}")"
 git merge-base --is-ancestor "$PIN_FULL" upstream/main
 echo "Rebasing ${FEATURE_BRANCH} onto upstream ${PIN_FULL}"
 git -c user.name="Container Build" \
