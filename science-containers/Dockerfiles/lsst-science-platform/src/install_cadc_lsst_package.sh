@@ -73,11 +73,6 @@ fi
 test -n "$PINNED"
 echo "EUPS pin for ${PACKAGE}: ${PINNED} (source=${PIN_SOURCE})"
 
-# #region agent log
-_dbg() { echo "DEBUG_AGENT_LOG $1"; }
-_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"F\",\"location\":\"install_cadc_lsst_package.sh:pin-source\",\"message\":\"eups pin source\",\"data\":{\"package\":\"${PACKAGE}\",\"pinned\":\"${PINNED}\",\"pinSource\":\"${PIN_SOURCE}\"},\"timestamp\":$(date +%s000)}"
-# #endregion
-
 UPSTREAM_COMMIT="$(echo "$PINNED" | sed -E 's/^g//; s/\+.*//')"
 SRC="/tmp/${PACKAGE}"
 
@@ -94,31 +89,12 @@ git remote add upstream "https://github.com/lsst/${PACKAGE}.git"
 # remote refs ("couldn't find remote ref"). Fetch-by-SHA needs the full 40-char id.
 git fetch --no-tags upstream main
 
-# #region agent log
-_RESOLVED=false
-_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"A\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"pin resolve inputs\",\"data\":{\"package\":\"${PACKAGE}\",\"pinned\":\"${PINNED}\",\"pinSource\":\"${PIN_SOURCE}\",\"upstreamCommit\":\"${UPSTREAM_COMMIT}\",\"commitLen\":${#UPSTREAM_COMMIT}},\"timestamp\":$(date +%s000)}"
-# #endregion
-
 PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}" 2>/dev/null || true)"
-if [ -n "$PIN_FULL" ]; then
-    _RESOLVED=true
-fi
-
-# #region agent log
-_dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"D\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"rev-parse after fetch main\",\"data\":{\"upstreamCommit\":\"${UPSTREAM_COMMIT}\",\"pinFull\":\"${PIN_FULL}\",\"resolved\":${_RESOLVED}},\"timestamp\":$(date +%s000)}"
-# #endregion
-
 if [ -z "$PIN_FULL" ]; then
     if [[ "$UPSTREAM_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
-        # #region agent log
-        _dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"A\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"fetching full sha fallback\",\"data\":{\"sha\":\"${UPSTREAM_COMMIT}\"},\"timestamp\":$(date +%s000)}"
-        # #endregion
         git fetch --no-tags upstream "$UPSTREAM_COMMIT"
         PIN_FULL="$(git rev-parse --verify "${UPSTREAM_COMMIT}^{commit}")"
     else
-        # #region agent log
-        _dbg "{\"sessionId\":\"b04648\",\"runId\":\"${DEBUG_RUN_ID:-post-fix2}\",\"hypothesisId\":\"B\",\"location\":\"install_cadc_lsst_package.sh:resolve-pin\",\"message\":\"pin not on main and not full sha\",\"data\":{\"upstreamCommit\":\"${UPSTREAM_COMMIT}\"},\"timestamp\":$(date +%s000)}"
-        # #endregion
         echo "ERROR: EUPS pin commit ${UPSTREAM_COMMIT} not found on upstream/main" >&2
         exit 1
     fi
