@@ -9,21 +9,27 @@ LSST_BASE_REPO = lsstsqre/sciplat-lab
 BASE_DIGEST ?= $(shell docker buildx imagetools inspect $(LSST_BASE_REPO):$(VERSION) --raw | python3 -c 'import sys,json;d=json.load(sys.stdin);ms=d.get("manifests")or[];print(next(m["digest"] for m in ms if m.get("platform")=={"architecture":"amd64","os":"linux"}))')
 BASE_IMAGE ?= $(LSST_BASE_REPO)@$(BASE_DIGEST)
 
-# CADC-patched packages. Forks are ijiraq/lsst_<name>. Install order is
+# CADC-patched packages. Default forks are ijiraq/lsst_<name>; obs_subaru
+# uses ijiraq/obs_subaru (see Dockerfile FORK_REPO). Install order is
 # Dockerfile order only. To add a package: append here + ARG/RUN in Dockerfile.
-CADC_PACKAGES = resources daf_butler
+CADC_PACKAGES = resources daf_butler obs_subaru
 CADC_KIND_resources = Required
 CADC_KIND_daf_butler = Optional
+# Listed as setupRequired in lsst_obs.table (pulled in via setupOptional(lsst_obs)).
+CADC_KIND_obs_subaru = Required
 pkg_ver_arg = $(shell echo $(1) | tr '[:lower:]' '[:upper:]')_VER
 
-# Per-package EUPS pin from lsst_distrib.table (setupRequired/setupOptional).
+# Per-package EUPS pin from lsst_distrib.table (setupRequired/setupOptional),
+# with fallback to the version currently setup by lsst_distrib (needed for
+# packages only listed under lsst_obs, e.g. obs_subaru).
 # Used only as a Docker cache key; the install script always reads the pin
 # from the image being built. Do not recurse through $(MAKE) here — a nested
 # make drops command-line VERSION and falls back to latest_daily.
-probe_eups = docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash $(BASE_IMAGE) -c 'source /opt/lsst/software/stack/loadLSST.bash >/dev/null 2>&1 && setup lsst_distrib >/dev/null 2>&1 && TABLE=$$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table && awk "/setup$(2)\\($(1)/ { gsub(/)/, \"\", \$$NF); print \$$NF; exit }" "$$TABLE"'
+probe_eups = docker run --rm -u 0 -e SHELL=bash -e HOME=/tmp --entrypoint bash $(BASE_IMAGE) -c 'source /opt/lsst/software/stack/loadLSST.bash >/dev/null 2>&1 && setup lsst_distrib >/dev/null 2>&1 && TABLE=$$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table && VER=$$(awk "/setup$(2)\\($(1)/ { gsub(/)/, \"\", \$$NF); print \$$NF; exit }" "$$TABLE") && if [ -z "$$VER" ]; then VER=$$(eups list -s $(1) | awk "{print \$$2; exit}"); fi && echo "$$VER"'
 
 RESOURCES_VER ?= $(shell $(call probe_eups,resources,$(CADC_KIND_resources)))
 DAF_BUTLER_VER ?= $(shell $(call probe_eups,daf_butler,$(CADC_KIND_daf_butler)))
+OBS_SUBARU_VER ?= $(shell $(call probe_eups,obs_subaru,$(CADC_KIND_obs_subaru)))
 
 BUILD_ARGS = \
 	--build-arg BASE_IMAGE=$(BASE_IMAGE) \
@@ -61,6 +67,7 @@ build: dependencies Dockerfile
 	@echo "BASE_IMAGE=$(BASE_IMAGE)"
 	@echo "RESOURCES_VER=$(RESOURCES_VER)"
 	@echo "DAF_BUTLER_VER=$(DAF_BUTLER_VER)"
+	@echo "OBS_SUBARU_VER=$(OBS_SUBARU_VER)"
 	$(BUILDX_BASE) --target deploy --load
 
 # BuildKit cannot attach an SPDX SBOM larger than 40MiB; the LSST stack's
@@ -70,6 +77,7 @@ deploy: dependencies Dockerfile
 	@echo "BASE_IMAGE=$(BASE_IMAGE)"
 	@echo "RESOURCES_VER=$(RESOURCES_VER)"
 	@echo "DAF_BUTLER_VER=$(DAF_BUTLER_VER)"
+	@echo "OBS_SUBARU_VER=$(OBS_SUBARU_VER)"
 	$(BUILDX_BASE) \
 		--target deploy \
 		$(METADATA_FLAGS) \
@@ -86,11 +94,14 @@ resources-ver:
 daf-butler-ver:
 	@$(call probe_eups,daf_butler,$(CADC_KIND_daf_butler))
 
+obs-subaru-ver:
+	@$(call probe_eups,obs_subaru,$(CADC_KIND_obs_subaru))
+
 dependencies:
 
 init:
 	mkdir -p build
 
-.PHONY: build deploy dev clean resources-ver daf-butler-ver
+.PHONY: build deploy dev clean resources-ver daf-butler-ver obs-subaru-ver
 clean:
 	\rm -rf build

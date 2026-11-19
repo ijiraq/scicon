@@ -134,10 +134,11 @@ WORKDIR /tmp
 COPY src/install_cadc_lsst_package.sh /tmp/install_cadc_lsst_package.sh
 RUN chmod +x /tmp/install_cadc_lsst_package.sh
 
-# CADC-patched LSST packages from ijiraq/lsst_<package> forks.
+# CADC-patched LSST packages from ijiraq forks (default ijiraq/lsst_<package>).
 # Each package: feature branch rebased onto that package's EUPS pin from
-# lsst_distrib.table. *_VER build-args are cache keys only (from Make probe);
-# the install script always reads the pin from this image.
+# lsst_distrib.table (or the setup version for packages under lsst_obs).
+# *_VER build-args are cache keys only (from Make probe); the install script
+# always reads the pin from this image.
 # Install in dependency order (resources before daf_butler).
 ARG FEATURE_BRANCH=cadc_datastore
 
@@ -150,6 +151,15 @@ ARG DAF_BUTLER_VER
 RUN echo "daf_butler cache key=${DAF_BUTLER_VER}" && \
     FEATURE_BRANCH="$FEATURE_BRANCH" \
     /tmp/install_cadc_lsst_package.sh daf_butler Optional
+
+# New Horizons EB-GRI filter support: ijiraq/obs_subaru@tickets/eb-gri-nh
+# declared current so setup lsst_distrib picks it up without setup -r.
+ARG OBS_SUBARU_VER
+ARG OBS_SUBARU_BRANCH=tickets/eb-gri-nh
+RUN echo "obs_subaru cache key=${OBS_SUBARU_VER}" && \
+    FEATURE_BRANCH="$OBS_SUBARU_BRANCH" \
+    FORK_REPO=obs_subaru \
+    /tmp/install_cadc_lsst_package.sh obs_subaru Required
 
 # mimic some filestructures on the RSP
 RUN ln -s /arc/projects/LSST /rubin

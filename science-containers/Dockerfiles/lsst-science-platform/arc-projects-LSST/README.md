@@ -12,6 +12,16 @@ Session startup scripts (for example `startup.sh` in the sciplat image)
 read these paths at runtime so operators can update service mappings
 without rebuilding images.
 
+## Image-baked package overlays (related)
+
+Separately from these ARC files, the sciplat-lab **image build** overlays a
+few LSST packages (see `Dockerfile` / `install_cadc_lsst_package.sh`):
+
+- `ijiraq/lsst_resources` and `ijiraq/lsst_daf_butler` (`cadc_datastore`)
+- `ijiraq/obs_subaru@tickets/eb-gri-nh` — New Horizons `EB-GRI` / `gri` filter
+  support, declared EUPS `current` so `setup lsst_distrib` picks it up
+  **without** `setup -r …/obs_subaru`
+
 ## Files
 
 | File in this directory | Deployed path | Used by |

@@ -2,16 +2,20 @@
 # Install a CADC-patched LSST package from an ijiraq fork.
 #
 # Convention (same for every package):
-#   fork:     https://github.com/ijiraq/lsst_<package>
+#   fork:     https://github.com/ijiraq/${FORK_REPO}
+#             default FORK_REPO=lsst_<package> (override for e.g. obs_subaru)
 #   upstream: https://github.com/lsst/<package>
 #   branch:   $FEATURE_BRANCH (default: cadc_datastore), rebased onto the
-#             per-package EUPS pin from lsst_distrib.table
+#             per-package EUPS pin from lsst_distrib.table when present, else
+#             the version currently setup by lsst_distrib
 #             (setupRequired/setupOptional line for this package — not the
 #             lsst_distrib metapackage version itself).
 #
 # Usage:
 #   FEATURE_BRANCH=cadc_datastore \
 #     install_cadc_lsst_package.sh <package> <Required|Optional>
+#   FEATURE_BRANCH=tickets/eb-gri-nh FORK_REPO=obs_subaru \
+#     install_cadc_lsst_package.sh obs_subaru Required
 #
 # Note: do not enable `set -u` before loadLSST/setup — conda/eups activate
 # scripts reference unset vars (EUPS_PATH, DYLD_LIBRARY_PATH, etc.).
@@ -23,7 +27,7 @@ export SHELL="${SHELL:-/bin/bash}"
 PACKAGE="${1:?package name required (e.g. resources, daf_butler)}"
 SETUP_KIND="${2:?Required or Optional (setupRequired/setupOptional in table)}"
 FEATURE_BRANCH="${FEATURE_BRANCH:-cadc_datastore}"
-FORK_REPO="lsst_${PACKAGE}"
+FORK_REPO="${FORK_REPO:-lsst_${PACKAGE}}"
 
 echo "Installing ${PACKAGE} from ijiraq/${FORK_REPO}@${FEATURE_BRANCH} (kind=${SETUP_KIND})"
 
@@ -31,10 +35,15 @@ source /opt/lsst/software/stack/loadLSST.bash
 setup lsst_distrib
 
 # Individual package pin from the metapackage table (e.g. setupRequired(resources …)).
+# Instrument packages like obs_subaru are listed under lsst_obs, not lsst_distrib;
+# fall back to the version currently setup by lsst_distrib in that case.
 TABLE="$(eups list -s -d lsst_distrib)/ups/lsst_distrib.table"
 PINNED="$(awk -v pkg="$PACKAGE" -v kind="$SETUP_KIND" \
     'index($0, "setup" kind "(" pkg) { gsub(/)/, "", $NF); print $NF; exit }' \
     "$TABLE")"
+if [ -z "$PINNED" ]; then
+    PINNED="$(eups list -s "$PACKAGE" | awk '{print $2; exit}')"
+fi
 test -n "$PINNED"
 echo "EUPS pin for ${PACKAGE}: ${PINNED}"
 
